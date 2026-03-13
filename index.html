@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canada-Directory | Find Canadian Businesses</title>
+
+<!-- Firebase Compat SDK (works in any browser, no module needed) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --red:#D52B1E;--red-dark:#A8201A;--red-light:#FF4B3E;
+  --white:#FAFAF8;--black:#0A0A0A;--grey:#F0EDE8;
+  --grey-mid:#C8C4BE;--grey-dark:#6B6560;--green:#1A7A3A;
+  --shadow:0 2px 16px rgba(0,0,0,.08);--shadow-lg:0 12px 48px rgba(0,0,0,.15);
+  --r:10px;--rl:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:var(--white);color:var(--black);-webkit-font-smoothing:antialiased;}
+.hidden{display:none!important;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;border:none;transition:all .18s;text-decoration:none;white-space:nowrap;}
+.btn-red{background:var(--red);color:#fff;}.btn-red:hover{background:var(--red-dark);transform:translateY(-1px);box-shadow:0 4px 16px rgba(213,43,30,.3);}
+.btn-outline{background:transparent;color:var(--red);border:2px solid var(--red);}.btn-outline:hover{background:var(--red);color:#fff;}
+.btn-dark{background:var(--black);color:#fff;}.btn-dark:hover{background:#222;transform:translateY(-1px);}
+.btn-white{background:#fff;color:var(--black);border:1.5px solid var(--grey-mid);}.btn-white:hover{border-color:var(--red);color:var(--red);}
+.btn-ghost{background:transparent;color:var(--grey-dark);border:none;}.btn-ghost:hover{color:var(--black);}
+.btn-green{background:var(--green);color:#fff;}.btn-green:hover{background:#145f2d;}
+.btn-danger{background:#FFE5E3;color:var(--red);}.btn-danger:hover{background:var(--red);color:#fff;}
+.btn-sm{padding:7px 14px;font-size:13px;}
+.btn-lg{padding:15px 30px;font-size:16px;}
+.w100{width:100%;justify-content:center;}
+
+/* ── FORMS ── */
+.form-group{margin-bottom:16px;}
+.label{display:block;font-size:13px;font-weight:600;color:var(--grey-dark);margin-bottom:5px;}
+.inp{width:100%;padding:11px 14px;border:1.5px solid #E0DDD8;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--black);background:#fff;outline:none;transition:border-color .18s;}
+.inp:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(213,43,30,.07);}
+.inp::placeholder{color:var(--grey-mid);}
+.inp-sel{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%236B6560' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px;}
+.inp-ta{resize:vertical;min-height:96px;line-height:1.6;}
+.err-box{background:#FFE5E3;color:var(--red);border-radius:8px;padding:11px 14px;font-size:13px;margin-top:10px;}
+.ok-box{background:#E3F5E9;color:var(--green);border-radius:8px;padding:11px 14px;font-size:13px;margin-top:10px;}
+
+/* ── TAGS ── */
+.tag{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;}
+.tag-red{background:#FFE5E3;color:var(--red);}
+.tag-green{background:#E3F5E9;color:var(--green);}
+.tag-grey{background:var(--grey);color:var(--grey-dark);}
+.tag-gold{background:#FFF4D6;color:#7A5900;}
+
+/* ── NAVBAR ── */
+#navbar{position:sticky;top:0;z-index:500;background:rgba(250,250,248,.96);backdrop-filter:blur(12px);border-bottom:1.5px solid #EDEAE5;}
+.nav-inner{max-width:1280px;margin:0 auto;padding:0 28px;height:62px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{display:flex;align-items:center;gap:9px;cursor:pointer;text-decoration:none;}
+.nav-logo-leaf{font-size:24px;}
+.nav-logo-txt{font-family:'Fraunces',serif;font-size:19px;font-weight:900;color:var(--red);}
+.nav-logo-txt span{color:var(--black);}
+.nav-links{display:flex;gap:2px;}
+.nav-lnk{padding:7px 12px;border-radius:8px;font-size:14px;font-weight:500;color:var(--grey-dark);cursor:pointer;transition:all .14s;background:none;border:none;font-family:'DM Sans',sans-serif;}
+.nav-lnk:hover{color:var(--black);background:var(--grey);}
+.nav-acts{display:flex;align-items:center;gap:8px;}
+/* user dropdown */
+.u-menu{position:relative;}
+.u-drop{position:absolute;top:calc(100% + 8px);right:0;background:#fff;border:1.5px solid #EDEAE5;border-radius:var(--rl);box-shadow:var(--shadow-lg);min-width:190px;padding:7px;z-index:600;}
+.u-drop a{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:8px;font-size:14px;color:var(--black);cursor:pointer;transition:background .14s;text-decoration:none;}
+.u-drop a:hover{background:var(--grey);}
+.u-drop .sep{height:1px;background:#EDEAE5;margin:5px 0;}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;cursor:pointer;}
+
+/* ── HERO ── */
+.hero{background:linear-gradient(145deg,#0A0A0A 0%,#1C0404 45%,#C02216 100%);padding:80px 28px 70px;position:relative;overflow:hidden;}
+.hero::before{content:'🍁';position:absolute;right:-60px;top:50%;transform:translateY(-50%);font-size:380px;opacity:.04;line-height:1;pointer-events:none;}
+.hero-inner{max-width:740px;margin:0 auto;text-align:center;position:relative;z-index:1;}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 14px;font-size:13px;color:rgba(255,255,255,.75);margin-bottom:22px;}
+.hero h1{font-family:'Fraunces',serif;font-size:clamp(34px,6vw,66px);font-weight:900;color:#fff;line-height:1.05;margin-bottom:16px;}
+.hero h1 em{font-style:normal;background:linear-gradient(125deg,#FF7B6E,#FFB347);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero p{color:rgba(255,255,255,.6);font-size:16px;max-width:480px;margin:0 auto 32px;line-height:1.7;}
+.search-wrap{background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.14);border-radius:var(--rl);padding:5px;display:flex;gap:5px;max-width:680px;margin:0 auto;backdrop-filter:blur(10px);}
+.search-wrap input{flex:1;background:rgba(255,255,255,.09);border:none;border-radius:8px;padding:13px 16px;color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;outline:none;}
+.search-wrap input::placeholder{color:rgba(255,255,255,.38);}
+.search-wrap select{background:rgba(255,255,255,.09);border:none;border-radius:8px;padding:13px 12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;cursor:pointer;}
+.search-wrap select option{background:#1a1a1a;}
+.search-btn{background:var(--red);color:#fff;border:none;border-radius:8px;padding:13px 22px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:15px;cursor:pointer;transition:background .18s;white-space:nowrap;}
+.search-btn:hover{background:var(--red-dark);}
+.hero-stats{display:flex;justify-content:center;gap:36px;margin-top:36px;flex-wrap:wrap;}
+.hero-stat strong{display:block;font-family:'Fraunces',serif;font-size:28px;color:#fff;font-weight:900;}
+.hero-stat span{font-size:12px;color:rgba(255,255,255,.48);}
+
+/* ── SECTION ── */
+.sec{padding:64px 28px;max-width:1280px;margin:0 auto;}
+.sec-bg{background:var(--grey);}
+.sec-bg .sec-inner{max-width:1280px;margin:0 auto;padding:64px 28px;}
+.sec-eye{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:7px;}
+.sec-title{font-family:'Fraunces',serif;font-size:clamp(26px,4vw,38px);font-weight:900;line-height:1.1;}
+.sec-sub{color:var(--grey-dark);font-size:15px;margin-top:7px;line-height:1.6;}
+.sec-hdr{margin-bottom:36px;}
+.sec-hdr.row{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:14px;}
+
+/* ── INDUSTRY TILES ── */
+.ind-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:12px;}
+.ind-tile{background:#fff;border:1.5px solid #EDEAE5;border-radius:var(--rl);padding:20px 12px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.ind-tile::after{content:'';position:absolute;inset:0;background:var(--red);transform:scaleY(0);transform-origin:bottom;transition:transform .22s;z-index:0;}
+.ind-tile:hover::after{transform:scaleY(1);}
+.ind-tile:hover .t-icon,.ind-tile:hover .t-name,.ind-tile:hover .t-cnt{position:relative;z-index:1;color:#fff!important;}
+.ind-tile:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--red);}
+.t-icon{font-size:30px;margin-bottom:8px;display:block;position:relative;z-index:1;}
+.t-name{font-size:12px;font-weight:600;color:var(--black);line-height:1.3;position:relative;z-index:1;}
+.t-cnt{font-size:11px;color:var(--grey-dark);margin-top:3px;position:relative;z-index:1;transition:color .22s;}
+
+/* ── BIZ CARDS ── */
+.biz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;}
+.biz-card{background:#fff;border:1.5px solid #EDEAE5;border-radius:var(--rl);overflow:hidden;cursor:pointer;transition:all .2s;}
+.biz-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:transparent;}
+.biz-banner{height:82px;display:flex;align-items:center;justify-content:center;position:relative;}
+.biz-init{font-family:'Fraunces',serif;font-size:42px;font-weight:900;color:rgba(255,255,255,.32);}
+.biz-vtag{position:absolute;top:9px;right:9px;background:rgba(255,255,255,.18);border-radius:999px;padding:2px 9px;font-size:10px;color:#fff;font-weight:600;}
+.biz-body{padding:16px;}
+.biz-name{font-size:15px;font-weight:700;margin-bottom:4px;}
+.biz-meta{font-size:12px;color:var(--grey-dark);margin-bottom:8px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+.stars{color:#F5A623;}
+.biz-foot{padding:11px 16px;border-top:1px solid #EDEAE5;display:flex;align-items:center;justify-content:space-between;}
+
+/* ── FILTERS ── */
+.filters{background:#fff;border-bottom:1.5px solid #EDEAE5;padding:12px 28px;position:sticky;top:62px;z-index:400;}
+.filters-inner{max-width:1280px;margin:0 auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.fpill{display:flex;align-items:center;gap:5px;padding:7px 13px;border:1.5px solid #EDEAE5;border-radius:999px;font-size:13px;font-weight:500;cursor:pointer;background:#fff;font-family:'DM Sans',sans-serif;color:var(--black);transition:all .14s;}
+.fpill:hover,.fpill.act{border-color:var(--red);color:var(--red);}
+.fpill select,.fpill input{border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:inherit;background:transparent;cursor:pointer;padding:0;}
+
+/* ── BIZ DETAIL ── */
+.det-hero{background:linear-gradient(145deg,#0A0A0A,#250707);padding:48px 28px;color:#fff;}
+.det-hero-in{max-width:1100px;margin:0 auto;}
+.det-body{max-width:1100px;margin:0 auto;padding:32px 28px;display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start;}
+.det-sec{background:#fff;border:1.5px solid #EDEAE5;border-radius:var(--rl);padding:24px;margin-bottom:20px;}
+.det-sec h3{font-family:'Fraunces',serif;font-size:19px;font-weight:900;margin-bottom:16px;}
+.rev-card{border:1.5px solid #EDEAE5;border-radius:var(--rl);padding:16px;margin-bottom:12px;}
+.rev-hdr{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.rev-txt{font-size:14px;color:var(--grey-dark);line-height:1.7;}
+.reply-bub{background:var(--grey);border-radius:8px;padding:12px;margin-top:10px;border-left:3px solid var(--red);}
+.reply-bub .rl{font-size:10px;font-weight:700;color:var(--red);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;}
+.info-card{background:#fff;border:1.5px solid #EDEAE5;border-radius:var(--rl);padding:20px;position:sticky;top:80px;}
+.irow{display:flex;gap:10px;margin-bottom:12px;font-size:14px;align-items:flex-start;}
+.irow .ico{font-size:16px;flex-shrink:0;width:22px;margin-top:1px;}
+.ilbl{font-size:10px;font-weight:700;color:var(--grey-dark);text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;}
+
+/* ── AUTH ── */
+.auth-page{min-height:100vh;background:linear-gradient(145deg,#0A0A0A 0%,#1C0404 55%,#280808 100%);display:flex;align-items:center;justify-content:center;padding:36px 20px;}
+.auth-box{background:#fff;border-radius:var(--rl);padding:40px 36px;width:100%;max-width:420px;box-shadow:0 28px 72px rgba(0,0,0,.42);}
+.auth-logo{text-align:center;margin-bottom:24px;}
+.auth-logo .leaf{font-size:34px;}
+.auth-logo h2{font-family:'Fraunces',serif;color:var(--red);font-size:19px;margin-top:5px;}
+.auth-title{font-family:'Fraunces',serif;font-size:24px;font-weight:900;margin-bottom:5px;}
+.auth-sub{color:var(--grey-dark);font-size:13px;margin-bottom:24px;}
+.google-btn{width:100%;padding:12px;border:1.5px solid #EDEAE5;border-radius:var(--r);background:#fff;display:flex;align-items:center;justify-content:center;gap:9px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .18s;}
+.google-btn:hover{border-color:var(--red);box-shadow:var(--shadow);}
+.div-or{display:flex;align-items:center;gap:10px;color:var(--grey-mid);font-size:13px;margin:16px 0;}
+.div-or::before,.div-or::after{content:'';flex:1;height:1px;background:#EDEAE5;}
+.auth-foot{margin-top:16px;text-align:center;font-size:14px;}
+.auth-foot a{color:var(--red);font-weight:600;cursor:pointer;}
+
+/* ── PORTALS LAYOUT ── */
+.portal-wrap{display:flex;min-height:calc(100vh - 62px);}
+/* Sidebar */
+.sidebar{width:248px;flex-shrink:0;position:sticky;top:62px;height:calc(100vh - 62px);overflow-y:auto;display:flex;flex-direction:column;}
+.sb-dark{background:#0A0A0A;}
+.sb-red{background:linear-gradient(180deg,#C02216,#8B1810);}
+.sb-brand{padding:20px;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-brand h3{font-family:'Fraunces',serif;color:#fff;font-size:16px;}
+.sb-brand p{color:rgba(255,255,255,.38);font-size:11px;margin-top:2px;}
+.sb-nav{padding:10px 8px;flex:1;}
+.sb-sec{padding:12px 10px 4px;font-size:10px;font-weight:700;letter-spacing:1.8px;color:rgba(255,255,255,.22);text-transform:uppercase;}
+.sb-lnk{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:8px;color:rgba(255,255,255,.58);font-size:13px;font-weight:500;cursor:pointer;transition:all .14s;background:none;border:none;font-family:'DM Sans',sans-serif;width:100%;text-align:left;}
+.sb-lnk:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.9);}
+.sb-dark .sb-lnk.act{background:var(--red);color:#fff;}
+.sb-red .sb-lnk.act{background:rgba(0,0,0,.25);color:#fff;}
+.sb-badge{margin-left:auto;background:#FF4B3E;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;}
+.sb-foot{padding:14px;border-top:1px solid rgba(255,255,255,.07);}
+/* Main */
+.portal-main{flex:1;background:#F5F3EF;overflow-y:auto;min-height:calc(100vh - 62px);}
+.p-topbar{background:#fff;border-bottom:1.5px solid #EDEAE5;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.p-topbar h2{font-family:'Fraunces',serif;font-size:20px;font-weight:900;}
+.p-content{padding:24px 28px;}
+
+/* ── STATS CARDS ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.stat-c{background:#fff;border:1.5px solid #EDEAE5;border-radius:var(--rl);padding:20px;position:relative;overflow:hidden;}
+.stat-c::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--red);}
+.stat-n{font-family:'Fraunces',serif;font-size:36px;font-weight:900;color:var(--red);line-height:1;}
+.stat-l{font-size:12px;color:var(--grey-dark);font-weight:600;margin-top:5px;}
+
+/* ── TABLES ── */
+.tbl-wrap{background:#fff;border:1.5px solid #EDEAE5;border-radius:var(--rl);overflow:hidden;margin-bottom:20px;}
+.tbl-head{padding:16px 20px;border-bottom:1px solid #EDEAE5;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.tbl-head h3{font-size:15px;font-weight:700;}
+table{width:100%;border-collapse:collapse;}
+thead th{background:#F5F3EF;padding:10px 16px;font-size:11px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--grey-dark);text-align:left;}
+tbody td{padding:12px 16px;border-bottom:1px solid #F0EDE8;font-size:13px;vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:#FAFAF8;}
+.td-acts{display:flex;gap:5px;flex-wrap:wrap;}
+
+/* ── CHARTS ── */
+.bar-chart{display:flex;flex-direction:column;gap:10px;}
+.bar-row{display:flex;align-items:center;gap:10px;}
+.bar-lbl{font-size:12px;color:var(--grey-dark);width:110px;flex-shrink:0;}
+.bar-track{flex:1;background:var(--grey);border-radius:3px;height:20px;overflow:hidden;}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--red),#FF6B5B);border-radius:3px;transition:width .5s;display:flex;align-items:center;padding-left:7px;min-width:2px;}
+.bar-fill span{font-size:10px;color:#fff;font-weight:700;}
+.bar-val{font-size:12px;font-weight:700;width:36px;text-align:right;flex-shrink:0;}
+.charts-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;}
+
+/* ── MODAL ── */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.58);z-index:1000;display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(5px);}
+.modal{background:#fff;border-radius:var(--rl);padding:32px;max-width:580px;width:100%;max-height:92vh;overflow-y:auto;position:relative;animation:mIn .2s ease;}
+@keyframes mIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.modal-x{position:absolute;top:13px;right:13px;width:30px;height:30px;border-radius:8px;border:none;background:var(--grey);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--grey-dark);transition:all .14s;}
+.modal-x:hover{background:var(--red);color:#fff;}
+.modal h2{font-family:'Fraunces',serif;font-size:22px;font-weight:900;margin-bottom:5px;}
+.modal p.msub{color:var(--grey-dark);font-size:13px;margin-bottom:18px;}
+
+/* ── TOAST ── */
+.toast-box{position:fixed;bottom:22px;right:22px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{padding:13px 18px;border-radius:var(--rl);font-size:14px;font-weight:500;box-shadow:var(--shadow-lg);animation:tIn .28s ease;display:flex;align-items:center;gap:9px;pointer-events:all;}
+@keyframes tIn{from{opacity:0;transform:translateX(36px)}to{opacity:1;transform:none}}
+.t-ok{background:#0D2B1A;color:#72EDA0;}
+.t-err{background:#2B0D0D;color:#FF9090;}
+.t-inf{background:#0D1B2B;color:#90C4FF;}
+
+/* ── SPINNER ── */
+.spin{width:30px;height:30px;border:3px solid var(--grey);border-top-color:var(--red);border-radius:50%;animation:sp .7s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg)}}
+.load-c{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:52px;gap:12px;color:var(--grey-dark);font-size:14px;}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:52px 20px;}
+.empty .eico{font-size:48px;margin-bottom:14px;}
+.empty h3{font-family:'Fraunces',serif;font-size:20px;font-weight:900;margin-bottom:7px;}
+.empty p{color:var(--grey-dark);font-size:14px;}
+
+/* ── STAR PICKER ── */
+.star-pick{display:flex;gap:5px;}
+.star-pick span{font-size:30px;color:#DDD;cursor:pointer;transition:all .14s;user-select:none;}
+.star-pick span.lit{color:#F5A623;}
+.star-pick span:hover{transform:scale(1.15);}
+
+/* ── UPLOAD ZONE ── */
+.uzone{border:2px dashed var(--grey-mid);border-radius:var(--rl);padding:36px;text-align:center;cursor:pointer;transition:all .18s;}
+.uzone:hover{border-color:var(--red);background:#FFF5F4;}
+
+/* ── GRID 2 COL ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.gc2{grid-column:1/-1;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:860px){
+  .nav-links{display:none;}
+  .nav-inner{padding:0 16px;}
+  .hero{padding:52px 18px 48px;}
+  .search-wrap{flex-wrap:wrap;}
+  .sec{padding:48px 18px;}
+  .sec-bg .sec-inner{padding:48px 18px;}
+  .det-body{grid-template-columns:1fr;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .charts-grid{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .p-content{padding:18px;}
+  .biz-grid{grid-template-columns:1fr;}
+  .g2{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="toast-box" id="toast-box"></div>
+
+<!-- ═══════════════════ NAVBAR ═══════════════════ -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <a class="nav-logo" onclick="showPage('home')">
+      <span class="nav-logo-leaf">🍁</span>
+      <span class="nav-logo-txt">Canada<span>-Directory</span></span>
+    </a>
+    <div class="nav-links">
+      <button class="nav-lnk" onclick="showPage('home')">Home</button>
+      <button class="nav-lnk" onclick="showPage('browse')">Browse</button>
+      <button class="nav-lnk" onclick="showPage('home');setTimeout(()=>document.getElementById('hiw').scrollIntoView({behavior:'smooth'}),200)">How It Works</button>
+    </div>
+    <div class="nav-acts" id="nav-acts">
+      <button class="btn btn-outline btn-sm" onclick="openModal('m-listbiz')">+ List Your Business</button>
+      <button class="btn btn-dark btn-sm" onclick="showPage('login')">Sign In</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════ HOME ═══════════════════ -->
+<div id="page-home" class="page active">
+
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">🍁 Canada's #1 Business Directory</div>
+      <h1>Find Every Canadian<br>Business You Need — <em>Instantly.</em></h1>
+      <p>Discover, review and connect with verified Canadian businesses from coast to coast.</p>
+      <div class="search-wrap">
+        <input type="text" id="hs-q" placeholder="Search businesses, services, categories…" onkeydown="if(event.key==='Enter')doSearch()">
+        <select id="hs-prov">
+          <option value="">All Canada</option>
+          <option>Ontario</option><option>Quebec</option><option>British Columbia</option>
+          <option>Alberta</option><option>Manitoba</option><option>Saskatchewan</option>
+          <option>Nova Scotia</option><option>New Brunswick</option><option>Newfoundland</option>
+          <option>PEI</option><option>Northwest Territories</option><option>Yukon</option><option>Nunavut</option>
+        </select>
+        <button class="search-btn" onclick="doSearch()">🔍 Search</button>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><strong id="hs-bc">—</strong><span>Businesses</span></div>
+        <div class="hero-stat"><strong id="hs-rc">—</strong><span>Reviews</span></div>
+        <div class="hero-stat"><strong>20</strong><span>Industries</span></div>
+        <div class="hero-stat"><strong>13</strong><span>Provinces</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-bg">
+    <div class="sec-inner">
+      <div class="sec-hdr row">
+        <div><div class="sec-eye">Explore</div><h2 class="sec-title">Browse by Industry</h2><p class="sec-sub">Every sector of the Canadian economy</p></div>
+      </div>
+      <div class="ind-grid" id="ind-grid"></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-hdr row">
+      <div><div class="sec-eye">Top Rated</div><h2 class="sec-title">Featured Listings</h2><p class="sec-sub">Highly rated businesses trusted by Canadians</p></div>
+      <button class="btn btn-outline" onclick="showPage('browse')">View All →</button>
+    </div>
+    <div class="biz-grid" id="feat-grid"><div class="load-c"><div class="spin"></div><span>Loading…</span></div></div>
+  </div>
+
+  <div class="sec-bg" id="hiw">
+    <div class="sec-inner">
+      <div class="sec-hdr" style="text-align:center"><div class="sec-eye">Simple & Trusted</div><h2 class="sec-title">How Canada-Directory Works</h2></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:24px;margin-top:36px;">
+        <div style="text-align:center;padding:24px 16px"><div style="font-size:42px;margin-bottom:12px">🔍</div><h3 style="font-family:'Fraunces',serif;font-size:18px;font-weight:900;margin-bottom:7px">Search</h3><p style="color:var(--grey-dark);font-size:13px;line-height:1.7">Search by name, industry or location across all of Canada.</p></div>
+        <div style="text-align:center;padding:24px 16px"><div style="font-size:42px;margin-bottom:12px">✅</div><h3 style="font-family:'Fraunces',serif;font-size:18px;font-weight:900;margin-bottom:7px">Verified</h3><p style="color:var(--grey-dark);font-size:13px;line-height:1.7">Every listing is reviewed by our admin team before going live.</p></div>
+        <div style="text-align:center;padding:24px 16px"><div style="font-size:42px;margin-bottom:12px">⭐</div><h3 style="font-family:'Fraunces',serif;font-size:18px;font-weight:900;margin-bottom:7px">Review</h3><p style="color:var(--grey-dark);font-size:13px;line-height:1.7">Only verified accounts can review — keeping ratings honest.</p></div>
+        <div style="text-align:center;padding:24px 16px"><div style="font-size:42px;margin-bottom:12px">🍁</div><h3 style="font-family:'Fraunces',serif;font-size:18px;font-weight:900;margin-bottom:7px">List Your Business</h3><p style="color:var(--grey-dark);font-size:13px;line-height:1.7">Submit your business and get approved within 24 hours.</p></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /home -->
+
+<!-- ═══════════════════ BROWSE ═══════════════════ -->
+<div id="page-browse" class="page">
+  <div class="filters">
+    <div class="filters-inner">
+      <div class="fpill"><span>🔍</span><input type="text" id="f-q" placeholder="Search…" oninput="applyFilters()" style="min-width:130px;"></div>
+      <div class="fpill"><span>🏭</span>
+        <select id="f-ind" onchange="applyFilters()" style="border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;background:transparent;cursor:pointer;">
+          <option value="">All Industries</option>
+        </select>
+      </div>
+      <div class="fpill"><span>📍</span>
+        <select id="f-prov" onchange="applyFilters()" style="border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;background:transparent;cursor:pointer;">
+          <option value="">All Provinces</option>
+          <option>Ontario</option><option>Quebec</option><option>British Columbia</option>
+          <option>Alberta</option><option>Manitoba</option><option>Saskatchewan</option>
+          <option>Nova Scotia</option><option>New Brunswick</option><option>Newfoundland</option>
+        </select>
+      </div>
+      <div class="fpill"><span>↕️</span>
+        <select id="f-sort" onchange="applyFilters()" style="border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;background:transparent;cursor:pointer;">
+          <option value="rating">Top Rated</option>
+          <option value="newest">Newest</option>
+          <option value="az">A–Z</option>
+          <option value="reviews">Most Reviewed</option>
+        </select>
+      </div>
+      <span id="f-cnt" style="font-size:12px;color:var(--grey-dark);margin-left:auto;"></span>
+    </div>
+  </div>
+  <div class="sec">
+    <div id="browse-ttl" style="margin-bottom:28px;"><h2 class="sec-title">All Listings</h2></div>
+    <div class="biz-grid" id="browse-grid"></div>
+    <div id="browse-empty" class="empty hidden"><div class="eico">🔍</div><h3>No results found</h3><p>Try adjusting your filters.</p></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ DETAIL ═══════════════════ -->
+<div id="page-detail" class="page">
+  <div class="det-hero">
+    <div class="det-hero-in">
+      <div id="det-crumb" style="margin-bottom:8px;"></div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div>
+          <h1 id="det-name" style="font-family:'Fraunces',serif;font-size:clamp(26px,4vw,44px);font-weight:900;color:#fff;margin-bottom:8px;"></h1>
+          <div id="det-meta" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;"></div>
+        </div>
+        <div id="det-acts" style="display:flex;gap:8px;flex-wrap:wrap;padding-top:4px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="det-body">
+    <div>
+      <div class="det-sec" id="det-about"></div>
+      <div class="det-sec">
+        <h3>⭐ Customer Reviews</h3>
+        <div id="det-revs"></div>
+        <div id="det-rev-cta"></div>
+      </div>
+    </div>
+    <div>
+      <div class="info-card" id="det-info"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ LOGIN ═══════════════════ -->
+<div id="page-login" class="page">
+  <div class="auth-page">
+    <div class="auth-box">
+      <div class="auth-logo"><div class="leaf">🍁</div><h2>Canada-Directory</h2></div>
+      <h1 class="auth-title">Welcome Back</h1>
+      <p class="auth-sub">Sign in to access your dashboard</p>
+      <button class="google-btn" id="google-sign-in-btn" onclick="signInGoogle()">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M47.5 24.6c0-1.6-.1-3.1-.4-4.6H24v8.7h13.2c-.6 3-2.3 5.5-4.9 7.2v6h7.9c4.6-4.3 7.3-10.6 7.3-17.3z"/><path fill="#34A853" d="M24 48c6.5 0 12-2.2 16-5.8l-7.9-6c-2.2 1.5-5 2.3-8.1 2.3-6.2 0-11.5-4.2-13.4-9.9H2.5v6.2C6.5 42.6 14.7 48 24 48z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6v-6.2H2.5C.9 16.6 0 20.2 0 24s.9 7.4 2.5 10.8l8.1-6.2z"/><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.8-6.8C35.9 2.3 30.5 0 24 0 14.7 0 6.5 5.4 2.5 13.2l8.1 6.2C12.5 13.7 17.8 9.5 24 9.5z"/></svg>
+        Continue with Google
+      </button>
+      <div class="div-or">or sign in with email</div>
+      <div class="form-group"><label class="label">Email</label><input type="email" id="li-em" class="inp" placeholder="you@example.com"></div>
+      <div class="form-group"><label class="label">Password</label><input type="password" id="li-pw" class="inp" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-red w100" onclick="doLogin()">Sign In →</button>
+      <div id="li-err" class="err-box hidden"></div>
+      <div class="auth-foot">Don't have an account? <a onclick="showPage('signup')">Sign up free</a></div>
+      <div style="text-align:center;margin-top:8px;"><a onclick="showPage('forgot')" style="font-size:13px;color:var(--grey-dark);cursor:pointer;">Forgot password?</a></div>
+      <div style="text-align:center;margin-top:12px;"><a onclick="showPage('home')" style="font-size:13px;color:var(--grey-dark);cursor:pointer;">← Back to Directory</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SIGNUP ═══════════════════ -->
+<div id="page-signup" class="page">
+  <div class="auth-page">
+    <div class="auth-box">
+      <div class="auth-logo"><div class="leaf">🍁</div><h2>Canada-Directory</h2></div>
+      <h1 class="auth-title">Create Account</h1>
+      <p class="auth-sub">Join Canada's largest business directory</p>
+      <button class="google-btn" onclick="signInGoogle()">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M47.5 24.6c0-1.6-.1-3.1-.4-4.6H24v8.7h13.2c-.6 3-2.3 5.5-4.9 7.2v6h7.9c4.6-4.3 7.3-10.6 7.3-17.3z"/><path fill="#34A853" d="M24 48c6.5 0 12-2.2 16-5.8l-7.9-6c-2.2 1.5-5 2.3-8.1 2.3-6.2 0-11.5-4.2-13.4-9.9H2.5v6.2C6.5 42.6 14.7 48 24 48z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6v-6.2H2.5C.9 16.6 0 20.2 0 24s.9 7.4 2.5 10.8l8.1-6.2z"/><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.8-6.8C35.9 2.3 30.5 0 24 0 14.7 0 6.5 5.4 2.5 13.2l8.1 6.2C12.5 13.7 17.8 9.5 24 9.5z"/></svg>
+        Continue with Google
+      </button>
+      <div class="div-or">or create with email</div>
+      <div class="form-group"><label class="label">Full Name</label><input type="text" id="su-nm" class="inp" placeholder="Jane Smith"></div>
+      <div class="form-group"><label class="label">Email</label><input type="email" id="su-em" class="inp" placeholder="you@example.com"></div>
+      <div class="form-group"><label class="label">Password (min 8 characters)</label><input type="password" id="su-pw" class="inp" placeholder="••••••••"></div>
+      <button class="btn btn-red w100" onclick="doSignup()">Create Account →</button>
+      <div id="su-err" class="err-box hidden"></div>
+      <div id="su-ok" class="ok-box hidden"></div>
+      <div class="auth-foot">Already have an account? <a onclick="showPage('login')">Sign in</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ FORGOT ═══════════════════ -->
+<div id="page-forgot" class="page">
+  <div class="auth-page">
+    <div class="auth-box">
+      <div class="auth-logo"><div class="leaf">🍁</div><h2>Canada-Directory</h2></div>
+      <h1 class="auth-title">Reset Password</h1>
+      <p class="auth-sub">We'll send a reset link to your email</p>
+      <div class="form-group"><label class="label">Email</label><input type="email" id="fp-em" class="inp" placeholder="you@example.com"></div>
+      <button class="btn btn-red w100" onclick="doForgot()">Send Reset Link →</button>
+      <div id="fp-err" class="err-box hidden"></div>
+      <div id="fp-ok" class="ok-box hidden"></div>
+      <div style="text-align:center;margin-top:14px;"><a onclick="showPage('login')" style="font-size:13px;color:var(--grey-dark);cursor:pointer;">← Back to Login</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SUPER ADMIN ═══════════════════ -->
+<div id="page-admin" class="page">
+  <div class="portal-wrap">
+    <div class="sidebar sb-dark">
+      <div class="sb-brand"><h3>🍁 Super Admin</h3><p>Canada-Directory Control</p></div>
+      <div class="sb-nav">
+        <div class="sb-sec">Overview</div>
+        <button class="sb-lnk act" id="asl-dashboard" onclick="aTab('dashboard')">📊 Dashboard</button>
+        <div class="sb-sec">Listings</div>
+        <button class="sb-lnk" id="asl-pending" onclick="aTab('pending')">⏳ Pending <span class="sb-badge" id="bdg-pend">0</span></button>
+        <button class="sb-lnk" id="asl-listings" onclick="aTab('listings')">📋 All Listings</button>
+        <button class="sb-lnk" id="asl-add" onclick="aTab('add')">➕ Add Listing</button>
+        <button class="sb-lnk" id="asl-bulk" onclick="aTab('bulk')">📤 Bulk Import</button>
+        <button class="sb-lnk" id="asl-places" onclick="aTab('places')">🌐 Google Places Import</button>
+        <div class="sb-sec">Users & Reviews</div>
+        <button class="sb-lnk" id="asl-users" onclick="aTab('users')">👥 Users</button>
+        <button class="sb-lnk" id="asl-reviews" onclick="aTab('reviews')">⭐ Reviews <span class="sb-badge" id="bdg-flag">0</span></button>
+        <div class="sb-sec">Business</div>
+        <button class="sb-lnk" id="asl-accounts" onclick="aTab('accounts')">🏢 Business Accounts</button>
+        <button class="sb-lnk" id="asl-analytics" onclick="aTab('analytics')">📈 Analytics</button>
+        <div class="sb-sec">System</div>
+        <button class="sb-lnk" id="asl-industries" onclick="aTab('industries')">🏭 Industries</button>
+        <button class="sb-lnk" id="asl-settings" onclick="aTab('settings')">⚙️ Settings</button>
+      </div>
+      <div class="sb-foot"><button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;color:rgba(255,255,255,.4);" onclick="doLogout()">🚪 Logout</button></div>
+    </div>
+    <div class="portal-main">
+      <div class="p-topbar">
+        <h2 id="a-title">Dashboard</h2>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:12px;color:var(--grey-dark);" id="a-time"></span>
+          <div class="avatar" style="background:var(--black);font-size:13px;">SA</div>
+        </div>
+      </div>
+      <div class="p-content" id="a-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ BIZ PORTAL ═══════════════════ -->
+<div id="page-bizportal" class="page">
+  <div class="portal-wrap">
+    <div class="sidebar sb-red">
+      <div class="sb-brand"><h3 id="bsp-name">My Business</h3><p>Business Dashboard</p></div>
+      <div class="sb-nav">
+        <button class="sb-lnk act" id="bsl-overview" onclick="bTab('overview')">📊 Overview</button>
+        <div class="sb-sec">Manage</div>
+        <button class="sb-lnk" id="bsl-profile" onclick="bTab('profile')">🏢 Business Profile</button>
+        <button class="sb-lnk" id="bsl-reviews" onclick="bTab('reviews')">⭐ Reviews & Ratings</button>
+        <button class="sb-lnk" id="bsl-locations" onclick="bTab('locations')">📍 Locations</button>
+        <button class="sb-lnk" id="bsl-photos" onclick="bTab('photos')">📸 Photos & Media</button>
+        <div class="sb-sec">Insights</div>
+        <button class="sb-lnk" id="bsl-analytics" onclick="bTab('analytics')">📈 Analytics</button>
+        <button class="sb-lnk" id="bsl-leads" onclick="bTab('leads')">🎯 Leads</button>
+        <div class="sb-sec">Account</div>
+        <button class="sb-lnk" id="bsl-settings" onclick="bTab('settings')">⚙️ Settings</button>
+        <button class="sb-lnk" id="bsl-support" onclick="bTab('support')">💬 Support</button>
+      </div>
+      <div class="sb-foot"><button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;color:rgba(255,255,255,.35);" onclick="doLogout()">🚪 Logout</button></div>
+    </div>
+    <div class="portal-main">
+      <div class="p-topbar">
+        <h2 id="b-title">Overview</h2>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="btn btn-outline btn-sm" onclick="viewMyListing()">View Public Listing →</button>
+          <div class="avatar" id="b-av">B</div>
+        </div>
+      </div>
+      <div class="p-content" id="b-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ FOOTER ═══════════════════ -->
+<footer id="main-footer" style="background:var(--black);color:rgba(255,255,255,.45);padding:48px 28px 24px;">
+  <div style="max-width:1280px;margin:0 auto;">
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px;">
+      <div><div style="font-size:30px;margin-bottom:8px;">🍁</div><h3 style="font-family:'Fraunces',serif;color:#fff;font-size:20px;margin-bottom:8px;">Canada-Directory</h3><p style="font-size:13px;line-height:1.7;max-width:240px;">Canada's most trusted business directory. Connecting Canadians with verified local businesses coast to coast.</p></div>
+      <div><h4 style="color:#fff;font-size:13px;font-weight:700;margin-bottom:12px;">Directory</h4>
+        <a onclick="showPage('home')" style="display:block;color:rgba(255,255,255,.38);font-size:13px;margin-bottom:7px;cursor:pointer;">Home</a>
+        <a onclick="showPage('browse')" style="display:block;color:rgba(255,255,255,.38);font-size:13px;margin-bottom:7px;cursor:pointer;">Browse All</a>
+        <a onclick="openModal('m-listbiz')" style="display:block;color:rgba(255,255,255,.38);font-size:13px;margin-bottom:7px;cursor:pointer;">List Your Business</a>
+      </div>
+      <div><h4 style="color:#fff;font-size:13px;font-weight:700;margin-bottom:12px;">Industries</h4>
+        <a onclick="filterByIndustry('restaurants')" style="display:block;color:rgba(255,255,255,.38);font-size:13px;margin-bottom:7px;cursor:pointer;">Restaurants</a>
+        <a onclick="filterByIndustry('health')" style="display:block;color:rgba(255,255,255,.38);font-size:13px;margin-bottom:7px;cursor:pointer;">Health & Medical</a>
+        <a onclick="filterByIndustry('legal')" style="display:block;color:rgba(255,255,255,.38);font-size:13px;margin-bottom:7px;cursor:pointer;">Legal Services</a>
+        <a onclick="filterByIndustry('real-estate')" style="display:block;color:rgba(255,255,255,.38);font-size:13px;margin-bottom:7px;cursor:pointer;">Real Estate</a>
+      </div>
+      <div><h4 style="color:#fff;font-size:13px;font-weight:700;margin-bottom:12px;">Account</h4>
+        <a onclick="showPage('login')" style="display:block;color:rgba(255,255,255,.38);font-size:13px;margin-bottom:7px;cursor:pointer;">Sign In</a>
+        <a onclick="showPage('signup')" style="display:block;color:rgba(255,255,255,.38);font-size:13px;margin-bottom:7px;cursor:pointer;">Create Account</a>
+      </div>
+    </div>
+    <div style="border-top:1px solid #181818;padding-top:20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px;">
+      <span>© 2025 Canada-Directory. All rights reserved. 🍁</span>
+      <span>Built for Canadians, by Canadians</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════ MODALS ═══════════════════ -->
+
+<!-- List Business -->
+<div id="m-listbiz" class="modal-ov hidden">
+  <div class="modal" style="max-width:640px;">
+    <button class="modal-x" onclick="closeModal('m-listbiz')">✕</button>
+    <div style="font-size:38px;text-align:center;margin-bottom:14px;">🍁</div>
+    <h2 style="text-align:center;">List Your Business</h2>
+    <p class="msub" style="text-align:center;">Fill out the form below. We review and respond within 24 hours.</p>
+    <div class="g2">
+      <div class="form-group gc2"><label class="label">Business Name *</label><input type="text" id="lb-nm" class="inp" placeholder="e.g. Smith's Plumbing"></div>
+      <div class="form-group"><label class="label">Industry *</label><select id="lb-ind" class="inp inp-sel"><option value="">Select Industry</option></select></div>
+      <div class="form-group"><label class="label">Province *</label><select id="lb-prov" class="inp inp-sel"><option value="">Select Province</option><option>Ontario</option><option>Quebec</option><option>British Columbia</option><option>Alberta</option><option>Manitoba</option><option>Saskatchewan</option><option>Nova Scotia</option><option>New Brunswick</option><option>Newfoundland</option></select></div>
+      <div class="form-group"><label class="label">City *</label><input type="text" id="lb-city" class="inp" placeholder="e.g. Toronto"></div>
+      <div class="form-group"><label class="label">Phone *</label><input type="tel" id="lb-ph" class="inp" placeholder="416-555-0100"></div>
+      <div class="form-group gc2"><label class="label">Business Email *</label><input type="email" id="lb-em" class="inp" placeholder="info@yourbusiness.ca"></div>
+      <div class="form-group gc2"><label class="label">Address</label><input type="text" id="lb-addr" class="inp" placeholder="123 Main St, City, Province"></div>
+      <div class="form-group gc2"><label class="label">Website</label><input type="url" id="lb-web" class="inp" placeholder="https://yourbusiness.ca"></div>
+      <div class="form-group gc2"><label class="label">Business Description *</label><textarea id="lb-desc" class="inp inp-ta" placeholder="Describe your business, services, years of experience…"></textarea></div>
+    </div>
+    <div style="background:#FFF8E7;border-radius:8px;padding:12px;font-size:13px;color:#7A5900;margin-bottom:14px;">⚠️ By submitting you confirm this is a legitimate Canadian business. We will review within 24 hours.</div>
+    <button class="btn btn-red w100" onclick="submitListingReq()">Submit for Review →</button>
+    <div id="lb-err" class="err-box hidden"></div>
+    <div id="lb-ok" class="ok-box hidden"></div>
+  </div>
+</div>
+
+<!-- Review Modal -->
+<div id="m-review" class="modal-ov hidden">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal('m-review')">✕</button>
+    <h2>Leave a Review</h2>
+    <p class="msub" id="rv-biz-nm"></p>
+    <div class="form-group">
+      <label class="label">Your Rating *</label>
+      <div class="star-pick" id="star-pick">
+        <span onclick="setStar(1)">★</span><span onclick="setStar(2)">★</span>
+        <span onclick="setStar(3)">★</span><span onclick="setStar(4)">★</span>
+        <span onclick="setStar(5)">★</span>
+      </div>
+      <div style="font-size:12px;color:var(--grey-dark);margin-top:4px;" id="star-hint">Click to rate</div>
+    </div>
+    <div class="form-group"><label class="label">Title</label><input type="text" id="rv-title" class="inp" placeholder="e.g. Great experience!"></div>
+    <div class="form-group"><label class="label">Your Review *</label><textarea id="rv-txt" class="inp inp-ta" placeholder="Share your honest experience…"></textarea></div>
+    <button class="btn btn-red w100" onclick="submitReview()">Submit Review →</button>
+    <div id="rv-err" class="err-box hidden"></div>
+    <p style="font-size:12px;color:var(--grey-dark);margin-top:10px;text-align:center;">Reviews are screened for spam. Only verified accounts can post.</p>
+  </div>
+</div>
+
+<!-- Reply Modal -->
+<div id="m-reply" class="modal-ov hidden">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal('m-reply')">✕</button>
+    <h2>Reply to Review</h2>
+    <p class="msub">Your reply will be publicly visible under this review.</p>
+    <div class="form-group"><textarea id="rp-txt" class="inp inp-ta" placeholder="Write a professional, helpful response…"></textarea></div>
+    <button class="btn btn-red w100" onclick="submitReply()">Post Reply →</button>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div id="m-confirm" class="modal-ov hidden">
+  <div class="modal" style="max-width:380px;text-align:center;">
+    <button class="modal-x" onclick="closeModal('m-confirm')">✕</button>
+    <div style="font-size:44px;margin-bottom:14px;" id="cfm-ico">⚠️</div>
+    <h2 id="cfm-title">Are you sure?</h2>
+    <p class="msub" id="cfm-msg">This cannot be undone.</p>
+    <div style="display:flex;gap:10px;margin-top:6px;">
+      <button class="btn btn-white" style="flex:1;justify-content:center;" onclick="closeModal('m-confirm')">Cancel</button>
+      <button class="btn btn-danger" style="flex:1;justify-content:center;" id="cfm-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+// ════════════════════════════════════════════════
+// FIREBASE CONFIG & INIT (Compat SDK)
+// ════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyC_XiWe6UsUQOEkNRYcxFodV57yIOHEyhw",
+  authDomain: "canada-directory-79392.firebaseapp.com",
+  projectId: "canada-directory-79392",
+  storageBucket: "canada-directory-79392.firebasestorage.app",
+  messagingSenderId: "836980678262",
+  appId: "1:836980678262:web:92c63d45e8f7e14e300957"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// Admin role checked via Firestore only — no credentials in code
+const PLACES_KEY = 'AIzaSyCup-QVNvZKnAiFihai8sABnrBWr0IjIVk';
+let IS_ADMIN = false;
+
+// ════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════
+let CU = null;           // current firebase user
+let CUD = null;          // current user firestore doc
+let activeBizId = null;  // biz detail page
+let reviewStar = 0;
+let reviewBizId = null;
+let replyRevId  = null;
+let confirmCB   = null;
+let adminTab_cur = 'dashboard';
+let bizTab_cur   = 'overview';
+let browseInd    = '';
+let selectedGP   = [];
+
+const INDUSTRIES = [
+  {id:'restaurants',name:'Restaurants & Food',icon:'🍽️'},
+  {id:'health',name:'Health & Medical',icon:'🏥'},
+  {id:'legal',name:'Legal Services',icon:'⚖️'},
+  {id:'real-estate',name:'Real Estate',icon:'🏠'},
+  {id:'auto',name:'Auto & Transport',icon:'🚗'},
+  {id:'retail',name:'Retail & Shopping',icon:'🛍️'},
+  {id:'tech',name:'Technology & IT',icon:'💻'},
+  {id:'finance',name:'Finance & Banking',icon:'💰'},
+  {id:'education',name:'Education & Training',icon:'📚'},
+  {id:'construction',name:'Construction & Trades',icon:'🔨'},
+  {id:'beauty',name:'Beauty & Wellness',icon:'💅'},
+  {id:'pets',name:'Pets & Animals',icon:'🐾'},
+  {id:'entertainment',name:'Entertainment & Events',icon:'🎭'},
+  {id:'travel',name:'Travel & Tourism',icon:'✈️'},
+  {id:'government',name:'Government & Public',icon:'🏛️'},
+  {id:'nonprofit',name:'Non-Profit & Community',icon:'🤝'},
+  {id:'sports',name:'Sports & Recreation',icon:'⚽'},
+  {id:'home',name:'Home Services',icon:'🏡'},
+  {id:'agriculture',name:'Agriculture & Farming',icon:'🌾'},
+  {id:'media',name:'Media & Marketing',icon:'📢'}
+];
+const IND_COLORS = {restaurants:'#C02216,#7A1210',health:'#1A7A3A,#0D3D1E',legal:'#1A3A7A,#0D1E3D','real-estate':'#7A5900,#3D2C00',auto:'#2A2A2A,#111',retail:'#7A1A6A,#3D0D35',tech:'#1A4A7A,#0D253D',finance:'#0D5C3A,#062E1D',education:'#7A3A1A,#3D1D0D',construction:'#5C3A0D,#2E1D06',beauty:'#8B1A6A,#4A0D35',pets:'#1A6A5C,#0D3530',entertainment:'#6A1A7A,#350D3D',travel:'#0D4A7A,#06253D'};
+
+// ════════════════════════════════════════════════
+// AUTH STATE OBSERVER
+// ════════════════════════════════════════════════
+auth.onAuthStateChanged(async function(user) {
+  CU = user;
+  if (user) {
+    try {
+      // Check role from Firestore — no email hardcoded
+      var roleSnap = await db.collection('users').where('email','==',user.email).where('role','==','superadmin').limit(1).get();
+      IS_ADMIN = !roleSnap.empty;
+      const snap = await db.collection('users').doc(user.uid).get();
+      CUD = snap.exists ? snap.data() : null;
+      if (!snap.exists) await saveUserDoc(user);
+    } catch(e) { CUD = null; IS_ADMIN = false; }
+    renderNavUser(user);
+    var dest = sessionStorage.getItem('dest');
+    if (dest) { sessionStorage.removeItem('dest'); showPage(dest); }
+  } else {
+    CUD = null;
+    IS_ADMIN = false;
+    renderNavGuest();
+  }
+});
+
+async function saveUserDoc(user, name) {
+  try {
+    await db.collection('users').doc(user.uid).set({
+      uid: user.uid, email: user.email,
+      displayName: name || user.displayName || '',
+      emailVerified: user.emailVerified,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      role: 'user', disabled: false
+    }, {merge: true});
+  } catch(e){}
+}
+
+function renderNavUser(user) {
+  var init = ((user.displayName || user.email || 'U')[0]).toUpperCase();
+  var isAdmin = IS_ADMIN;
+  document.getElementById('nav-acts').innerHTML =
+    '<button class="btn btn-outline btn-sm" onclick="openModal(\'m-listbiz\')">+ List Your Business</button>' +
+    '<div class="u-menu"><div class="avatar" onclick="toggleUD()" style="font-size:14px;">'+init+'</div>' +
+    '<div class="u-drop hidden" id="u-drop">' +
+    '<div style="padding:9px 11px;border-bottom:1px solid #EDEAE5;margin-bottom:4px;">' +
+    '<div style="font-weight:700;font-size:13px;">'+(user.displayName||'User')+'</div>' +
+    '<div style="font-size:11px;color:var(--grey-dark);">'+user.email+'</div></div>' +
+    (isAdmin ? '<a onclick="showPage(\'admin\');toggleUD()">🔐 Super Admin Portal</a>' : '<a onclick="showPage(\'bizportal\');toggleUD()">🏢 Business Portal</a>') +
+    '<div class="sep"></div><a onclick="doLogout()">🚪 Sign Out</a></div></div>';
+}
+function renderNavGuest() {
+  document.getElementById('nav-acts').innerHTML =
+    '<button class="btn btn-outline btn-sm" onclick="openModal(\'m-listbiz\')">+ List Your Business</button>' +
+    '<button class="btn btn-dark btn-sm" onclick="showPage(\'login\')">Sign In</button>';
+}
+function toggleUD() { var d=document.getElementById('u-drop'); if(d) d.classList.toggle('hidden'); }
+document.addEventListener('click', function(e){ if(!e.target.closest('.u-menu')){ var d=document.getElementById('u-drop'); if(d) d.classList.add('hidden'); } });
+
+// ════════════════════════════════════════════════
+// AUTH FUNCTIONS
+// ════════════════════════════════════════════════
+function signInGoogle() {
+  var provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).then(function(result) {
+    saveUserDoc(result.user);
+    toast('Welcome! 🍁', 'ok');
+    routeAfterLogin(result.user);
+  }).catch(function(e) {
+    toast(friendlyErr(e.code), 'err');
+  });
+}
+
+function doLogin() {
+  var em = gv('li-em'), pw = gv('li-pw');
+  if (!em || !pw) { showErr('li-err','Please fill in all fields.'); return; }
+  hideEl('li-err');
+  auth.signInWithEmailAndPassword(em, pw).then(function(cred) {
+    saveUserDoc(cred.user);
+    toast('Welcome back! 🍁','ok');
+    routeAfterLogin(cred.user);
+  }).catch(function(e) { showErr('li-err', friendlyErr(e.code)); });
+}
+
+function doSignup() {
+  var nm = gv('su-nm'), em = gv('su-em'), pw = gv('su-pw');
+  if (!nm||!em||!pw) { showErr('su-err','Please fill all fields.'); return; }
+  if (pw.length < 8) { showErr('su-err','Password must be at least 8 characters.'); return; }
+  hideEl('su-err');
+  auth.createUserWithEmailAndPassword(em, pw).then(function(cred) {
+    cred.user.sendEmailVerification();
+    saveUserDoc(cred.user, nm);
+    showEl('su-ok', '✅ Account created! Check your email to verify your address then sign in.');
+  }).catch(function(e) { showErr('su-err', friendlyErr(e.code)); });
+}
+
+function doForgot() {
+  var em = gv('fp-em');
+  if (!em) { showErr('fp-err','Enter your email address.'); return; }
+  auth.sendPasswordResetEmail(em).then(function() {
+    showEl('fp-ok','✅ Reset link sent! Check your inbox.');
+  }).catch(function(e) { showErr('fp-err', friendlyErr(e.code)); });
+}
+
+function doLogout() {
+  auth.signOut().then(function() { toast('Signed out. See you soon! 🍁','inf'); showPage('home'); });
+}
+
+function routeAfterLogin(user) {
+  if (IS_ADMIN) showPage('admin');
+  else showPage('bizportal');
+}
+
+function friendlyErr(code) {
+  var m = {'auth/user-not-found':'No account found with this email.','auth/wrong-password':'Incorrect password.','auth/invalid-credential':'Incorrect email or password.','auth/email-already-in-use':'An account already exists with this email.','auth/weak-password':'Password must be at least 8 characters.','auth/invalid-email':'Please enter a valid email address.','auth/too-many-requests':'Too many attempts. Try again later.','auth/popup-closed-by-user':'Sign-in was cancelled.'};
+  return m[code] || 'Something went wrong. Please try again.';
+}
+
+// ════════════════════════════════════════════════
+// PAGE NAVIGATION
+// ════════════════════════════════════════════════
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(function(el){ el.classList.remove('active'); });
+  var el = document.getElementById('page-'+p);
+  if (!el) return;
+  el.classList.add('active');
+  var noFt = ['admin','bizportal','login','signup','forgot'];
+  document.getElementById('main-footer').style.display = noFt.includes(p) ? 'none' : '';
+  window.scrollTo(0,0);
+  if (p==='home')     initHome();
+  if (p==='browse')   initBrowse();
+  if (p==='admin')    { if(!CU||!IS_ADMIN){sessionStorage.setItem('dest','admin');showPage('login');return;} initAdmin(); }
+  if (p==='bizportal'){ if(!CU){sessionStorage.setItem('dest','bizportal');showPage('login');return;} initBizPortal(); }
+}
+
+// ════════════════════════════════════════════════
+// HOME
+// ════════════════════════════════════════════════
+function initHome() {
+  renderIndGrid();
+  loadFeatured();
+  loadHeroStats();
+  populateIndSelects();
+}
+
+function renderIndGrid() {
+  var g = document.getElementById('ind-grid');
+  if (!g) return;
+  g.innerHTML = INDUSTRIES.map(function(i) {
+    return '<div class="ind-tile" onclick="filterByIndustry(\''+i.id+'\')">' +
+      '<span class="t-icon">'+i.icon+'</span>' +
+      '<div class="t-name">'+i.name+'</div>' +
+      '<div class="t-cnt" id="itc-'+i.id+'">—</div></div>';
+  }).join('');
+  INDUSTRIES.forEach(function(i) {
+    db.collection('businesses').where('approved','==',true).where('industry','==',i.id)
+      .get().then(function(s) {
+        var el = document.getElementById('itc-'+i.id);
+        if (el) el.textContent = s.size + ' listings';
+      }).catch(function(){});
+  });
+}
+
+function loadFeatured() {
+  var g = document.getElementById('feat-grid');
+  if (!g) return;
+  db.collection('businesses').where('approved','==',true).limit(6)
+    .get().then(function(snap) {
+      if (snap.empty) { g.innerHTML='<p style="color:var(--grey-dark)">No listings yet.</p>'; return; }
+      var bizzes = snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+      bizzes.sort(function(a,b){ return (b.avgRating||0)-(a.avgRating||0); });
+      g.innerHTML = bizzes.map(bizCardHTML).join('');
+    }).catch(function(e) { g.innerHTML='<p style="color:var(--grey-dark)">'+e.message+'</p>'; });
+}
+
+function loadHeroStats() {
+  db.collection('businesses').where('approved','==',true).get().then(function(s){ setTxt('hs-bc', s.size.toLocaleString()); }).catch(function(){});
+  db.collection('reviews').where('flagged','==',false).get().then(function(s){ setTxt('hs-rc', s.size.toLocaleString()); }).catch(function(){});
+}
+
+function populateIndSelects() {
+  ['lb-ind','f-ind','gp-ind'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var base = id==='f-ind' ? '<option value="">All Industries</option>' : '<option value="">Select Industry</option>';
+    el.innerHTML = base + INDUSTRIES.map(function(i){ return '<option value="'+i.id+'">'+i.icon+' '+i.name+'</option>'; }).join('');
+  });
+}
+
+function bizCardHTML(b) {
+  var ind = INDUSTRIES.find(function(i){ return i.id===b.industry; }) || {icon:'🏢',name:b.industry||'General'};
+  var avg = b.avgRating || 0;
+  var col = IND_COLORS[b.industry] || 'var(--red),var(--red-dark)';
+  return '<div class="biz-card" onclick="openDetail(\''+b.id+'\')">' +
+    '<div class="biz-banner" style="background:linear-gradient(135deg,'+col+');">' +
+    '<span class="biz-init">'+(b.name||'B')[0]+'</span>' +
+    '<span class="biz-vtag">✓ Verified</span></div>' +
+    '<div class="biz-body">' +
+    '<div class="biz-name">'+escHtml(b.name||'')+'</div>' +
+    '<div class="biz-meta"><span>'+ind.icon+' '+ind.name+'</span><span>•</span><span>📍 '+(b.city||'')+', '+(b.province||'')+'</span></div>' +
+    '<div style="display:flex;align-items:center;gap:7px;"><span class="stars" style="font-size:13px;">'+starsHTML(avg)+'</span>' +
+    '<span style="font-size:12px;color:var(--grey-dark);">'+avg.toFixed(1)+' ('+(b.reviewCount||0)+' reviews)</span></div>' +
+    '</div><div class="biz-foot"><span class="tag tag-grey">'+ind.icon+' '+ind.name+'</span>' +
+    '<span style="font-size:13px;color:var(--red);font-weight:600;">View →</span></div></div>';
+}
+
+function starsHTML(avg) {
+  var f=Math.round(avg); return '★'.repeat(f)+'☆'.repeat(5-f);
+}
+
+// ════════════════════════════════════════════════
+// BROWSE
+// ════════════════════════════════════════════════
+function filterByIndustry(id) { browseInd=id; showPage('browse'); }
+
+function initBrowse() {
+  populateIndSelects();
+  if (browseInd) { var el=document.getElementById('f-ind'); if(el) el.value=browseInd; }
+  applyFilters();
+}
+
+function applyFilters() {
+  var grid=document.getElementById('browse-grid'), empty=document.getElementById('browse-empty');
+  if (!grid) return;
+  grid.innerHTML='<div class="load-c"><div class="spin"></div><span>Loading…</span></div>';
+  var q=gv('f-q'), ind=gv2('f-ind'), prov=gv2('f-prov'), sort=gv2('f-sort')||'rating';
+  var title=document.getElementById('browse-ttl');
+  if (title) { var indObj=INDUSTRIES.find(function(i){return i.id===ind;}); title.innerHTML='<h2 class="sec-title">'+(indObj?indObj.icon+' '+indObj.name:'All Listings')+'</h2>'; }
+  var ref = db.collection('businesses').where('approved','==',true);
+  if (ind) ref = db.collection('businesses').where('approved','==',true).where('industry','==',ind);
+  ref.get().then(function(snap) {
+    var bizzes = snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+    if (prov) bizzes=bizzes.filter(function(b){return b.province===prov;});
+    if (q) { var s=q.toLowerCase(); bizzes=bizzes.filter(function(b){ return (b.name||'').toLowerCase().includes(s)||(b.city||'').toLowerCase().includes(s)||(b.description||'').toLowerCase().includes(s); }); }
+    if (sort==='rating') bizzes.sort(function(a,b){return (b.avgRating||0)-(a.avgRating||0);});
+    else if (sort==='az') bizzes.sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+    else if (sort==='reviews') bizzes.sort(function(a,b){return (b.reviewCount||0)-(a.reviewCount||0);});
+    else if (sort==='newest') bizzes.sort(function(a,b){return ((b.createdAt&&b.createdAt.seconds||0)-(a.createdAt&&a.createdAt.seconds||0));});
+    var cnt=document.getElementById('f-cnt'); if(cnt) cnt.textContent=bizzes.length+' result'+(bizzes.length!==1?'s':'');
+    if (!bizzes.length) { grid.innerHTML=''; empty.classList.remove('hidden'); }
+    else { empty.classList.add('hidden'); grid.innerHTML=bizzes.map(bizCardHTML).join(''); }
+  }).catch(function(e){ grid.innerHTML='<p style="color:var(--grey-dark);padding:20px;">'+e.message+'</p>'; });
+}
+
+function doSearch() {
+  var q=gv('hs-q'), prov=gv2('hs-prov');
+  browseInd='';
+  showPage('browse');
+  setTimeout(function(){
+    if(q){var el=document.getElementById('f-q');if(el)el.value=q;}
+    if(prov){var el=document.getElementById('f-prov');if(el)el.value=prov;}
+    applyFilters();
+  },80);
+}
+
+// ════════════════════════════════════════════════
+// BIZ DETAIL
+// ════════════════════════════════════════════════
+function openDetail(bizId) {
+  activeBizId=bizId;
+  showPage('detail');
+  db.collection('businesses').doc(bizId).get().then(function(snap) {
+    if (!snap.exists) { toast('Business not found.','err'); showPage('browse'); return; }
+    var b=Object.assign({id:snap.id},snap.data());
+    var ind=INDUSTRIES.find(function(i){return i.id===b.industry;})||{icon:'🏢',name:b.industry||''};
+    var avg=b.avgRating||0;
+    var col=IND_COLORS[b.industry]||'#C02216,#7A1210';
+    setTxt('det-name', b.name||'');
+    document.getElementById('det-crumb').innerHTML=
+      '<a onclick="showPage(\'home\')" style="color:rgba(255,255,255,.45);cursor:pointer;font-size:13px;">Home</a>' +
+      '<span style="color:rgba(255,255,255,.25);margin:0 7px;">/</span>' +
+      '<a onclick="filterByIndustry(\''+b.industry+'\')" style="color:rgba(255,255,255,.45);cursor:pointer;font-size:13px;">'+ind.name+'</a>' +
+      '<span style="color:rgba(255,255,255,.25);margin:0 7px;">/</span>' +
+      '<span style="color:rgba(255,255,255,.65);font-size:13px;">'+escHtml(b.name||'')+'</span>';
+    document.getElementById('det-meta').innerHTML=
+      '<span class="tag" style="background:rgba(255,255,255,.14);color:#fff;">'+ind.icon+' '+ind.name+'</span>'+
+      '<span style="color:rgba(255,255,255,.55);font-size:13px;">📍 '+(b.city||'')+', '+(b.province||'')+'</span>'+
+      '<span class="stars" style="font-size:15px;">'+starsHTML(avg)+'</span>'+
+      '<span style="color:rgba(255,255,255,.55);font-size:13px;">'+avg.toFixed(1)+' ('+(b.reviewCount||0)+' reviews)</span>'+
+      '<span style="color:rgba(255,255,255,.35);font-size:12px;">✓ Verified</span>';
+    var isAdmin=CU&&IS_ADMIN;
+    document.getElementById('det-acts').innerHTML=
+      (isAdmin?'<button class="btn btn-white btn-sm" onclick="showPage(\'admin\')">⚙️ Manage</button>':'')+
+      '<button class="btn btn-red btn-sm" onclick="openReviewModal(\''+bizId+'\',\''+escHtml(b.name||'')+'\')">⭐ Write Review</button>';
+    document.getElementById('det-about').innerHTML=
+      '<h3>About '+escHtml(b.name||'')+'</h3>' +
+      '<p style="color:var(--grey-dark);line-height:1.8;font-size:14px;">'+(b.description||'No description provided.')+'</p>';
+    document.getElementById('det-info').innerHTML=
+      '<h4 style="font-family:\'Fraunces\',serif;font-size:16px;font-weight:900;margin-bottom:16px;">📋 Business Info</h4>'+
+      (b.phone?'<div class="irow"><span class="ico">📞</span><div><div class="ilbl">Phone</div>'+escHtml(b.phone)+'</div></div>':'')+
+      (b.email?'<div class="irow"><span class="ico">📧</span><div><div class="ilbl">Email</div>'+escHtml(b.email)+'</div></div>':'')+
+      (b.address?'<div class="irow"><span class="ico">📍</span><div><div class="ilbl">Address</div>'+escHtml(b.address)+'</div></div>':'')+
+      (b.website?'<div class="irow"><span class="ico">🌐</span><div><div class="ilbl">Website</div><a href="'+b.website+'" target="_blank" style="color:var(--red);">'+b.website+'</a></div></div>':'')+
+      '<div class="irow"><span class="ico">🍁</span><div><div class="ilbl">Province</div>'+(b.province||'')+'</div></div>'+
+      '<button class="btn btn-red w100" style="margin-top:14px;" onclick="openReviewModal(\''+bizId+'\',\'\')">⭐ Write Review</button>';
+    loadDetailReviews(bizId);
+  }).catch(function(e){ toast(e.message,'err'); });
+}
+
+function loadDetailReviews(bizId) {
+  var list=document.getElementById('det-revs'), cta=document.getElementById('det-rev-cta');
+  if (!list) return;
+  db.collection('reviews').where('bizId','==',bizId).where('flagged','==',false)
+    .orderBy('createdAt','desc').limit(20)
+    .get().then(function(snap) {
+      if (snap.empty) { list.innerHTML='<p style="color:var(--grey-dark);padding:10px 0;">No reviews yet. Be the first!</p>'; }
+      else {
+        var isAdmin=CU&&IS_ADMIN;
+        list.innerHTML=snap.docs.map(function(d){
+          var r=Object.assign({id:d.id},d.data());
+          return '<div class="rev-card">' +
+            '<div class="rev-hdr">' +
+            '<div class="avatar" style="width:34px;height:34px;font-size:13px;">'+(r.userName||'U')[0]+'</div>' +
+            '<div style="flex:1;">' +
+            '<div style="font-weight:700;font-size:13px;">'+(r.userName||'Anonymous')+'</div>' +
+            '<div><span class="stars" style="font-size:12px;">'+'★'.repeat(r.rating||0)+'</span>' +
+            '<span style="font-size:11px;color:var(--grey-dark);margin-left:7px;">'+fmtDate(r.createdAt)+'</span></div></div>' +
+            (isAdmin?'<button class="btn btn-danger btn-sm" style="padding:4px 10px;" onclick="adminDelRev(\''+r.id+'\')">🗑️</button>':'')+
+            '<button class="btn btn-white btn-sm" style="padding:4px 10px;" onclick="openReplyModal(\''+r.id+'\')">💬</button>' +
+            '</div>' +
+            (r.title?'<div style="font-weight:700;font-size:13px;margin-bottom:4px;">'+escHtml(r.title)+'</div>':'')+
+            '<div class="rev-txt">'+escHtml(r.text||'')+'</div>' +
+            (r.reply?'<div class="reply-bub"><div class="rl">🍁 Business Response</div><p style="font-size:13px;color:var(--grey-dark);">'+escHtml(r.reply)+'</p></div>':'')+
+            '</div>';
+        }).join('');
+      }
+      if (!CU) cta.innerHTML='<div style="background:var(--grey);border-radius:8px;padding:16px;text-align:center;margin-top:14px;"><p style="font-size:13px;color:var(--grey-dark);">Please <a onclick="showPage(\'login\')" style="color:var(--red);font-weight:700;cursor:pointer;">sign in</a> to leave a review.</p></div>';
+      else if (!CU.emailVerified) cta.innerHTML='<div style="background:#FFF8E7;border-radius:8px;padding:14px;text-align:center;margin-top:14px;"><p style="font-size:13px;color:#7A5900;">⚠️ Please verify your email to leave a review.</p></div>';
+      else cta.innerHTML='<div style="margin-top:14px;"><button class="btn btn-red" onclick="openReviewModal(\''+bizId+'\',\'\')">⭐ Write a Review</button></div>';
+    }).catch(function(e){ list.innerHTML='<p style="color:var(--grey-dark);">Could not load reviews: '+e.message+'</p>'; });
+}
+
+// ════════════════════════════════════════════════
+// REVIEWS
+// ════════════════════════════════════════════════
+function openReviewModal(bizId, bizName) {
+  if (!CU) { showPage('login'); return; }
+  if (!CU.emailVerified) { toast('Please verify your email first.','err'); return; }
+  reviewBizId=bizId; reviewStar=0; updateStarUI();
+  setTxt('rv-biz-nm', bizName);
+  setVal('rv-title',''); setVal('rv-txt',''); hideEl('rv-err');
+  openModal('m-review');
+}
+
+function setStar(n) { reviewStar=n; updateStarUI(); }
+function updateStarUI() {
+  document.querySelectorAll('#star-pick span').forEach(function(s,i){ s.classList.toggle('lit',i<reviewStar); });
+  var hints=['','Poor','Fair','Good','Very Good','Excellent'];
+  setTxt('star-hint', reviewStar?hints[reviewStar]:'Click to rate');
+}
+
+function submitReview() {
+  if (!CU||!CU.emailVerified) { toast('Sign in and verify your email first.','err'); return; }
+  if (reviewStar===0) { showErr('rv-err','Please select a rating.'); return; }
+  var txt=gv('rv-txt');
+  if (!txt||txt.length<10) { showErr('rv-err','Review must be at least 10 characters.'); return; }
+  // Spam check
+  var flagged=spamCheck(txt);
+  db.collection('reviews').where('bizId','==',reviewBizId).where('userId','==',CU.uid).get().then(function(dup){
+    if (!dup.empty) { showErr('rv-err','You have already reviewed this business.'); return; }
+    db.collection('reviews').add({
+      bizId:reviewBizId, userId:CU.uid,
+      userName:CU.displayName||CU.email.split('@')[0],
+      userEmail:CU.email, rating:reviewStar,
+      title:gv('rv-title'), text:txt,
+      flagged:flagged, reply:null,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+      updateBizStats(reviewBizId);
+      closeModal('m-review');
+      toast(flagged?'Review submitted for moderation.':'Review posted! 🍁', flagged?'inf':'ok');
+      if (activeBizId===reviewBizId) loadDetailReviews(reviewBizId);
+    });
+  });
+}
+
+function spamCheck(txt) {
+  var spam=['casino','viagra','click here','buy now','make money','bitcoin','xxx','earn $','free money'];
+  var l=txt.toLowerCase();
+  if (spam.some(function(w){return l.includes(w);})) return true;
+  if (txt.length<15) return true;
+  if ((txt.match(/[A-Z]/g)||[]).length/txt.length>0.65) return true;
+  if ((txt.match(/!/g)||[]).length>4) return true;
+  return false;
+}
+
+function updateBizStats(bizId) {
+  db.collection('reviews').where('bizId','==',bizId).where('flagged','==',false).get().then(function(snap){
+    var total=snap.size, sum=0;
+    snap.forEach(function(d){sum+=d.data().rating||0;});
+    var avg=total?parseFloat((sum/total).toFixed(2)):0;
+    db.collection('businesses').doc(bizId).update({avgRating:avg,reviewCount:total});
+  });
+}
+
+function openReplyModal(revId) { replyRevId=revId; setVal('rp-txt',''); openModal('m-reply'); }
+function submitReply() {
+  var txt=gv('rp-txt'); if(!txt) return;
+  db.collection('reviews').doc(replyRevId).update({reply:txt,repliedAt:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){
+    closeModal('m-reply'); toast('Reply posted! 🍁','ok');
+    if (activeBizId) loadDetailReviews(activeBizId);
+    if (adminTab_cur==='reviews') aTab('reviews');
+    if (bizTab_cur==='reviews') bTab('reviews');
+  });
+}
+
+// ════════════════════════════════════════════════
+// LIST BUSINESS REQUEST
+// ════════════════════════════════════════════════
+function submitListingReq() {
+  var nm=gv('lb-nm'),ind=gv2('lb-ind'),prov=gv2('lb-prov'),city=gv('lb-city'),ph=gv('lb-ph'),em=gv('lb-em'),desc=gv('lb-desc');
+  if (!nm||!ind||!prov||!city||!ph||!em||!desc) { showErr('lb-err','Please fill all required fields.'); return; }
+  hideEl('lb-err');
+  db.collection('listing_requests').add({
+    name:nm,industry:ind,province:prov,city:city,phone:ph,email:em,
+    address:gv('lb-addr'),website:gv('lb-web'),description:desc,
+    status:'pending',submittedAt:firebase.firestore.FieldValue.serverTimestamp(),
+    submittedBy:CU?CU.uid:null
+  }).then(function(){
+    showEl('lb-ok','✅ Submitted! We will review and respond within 24 hours. Thank you for choosing Canada-Directory 🍁');
+    ['lb-nm','lb-city','lb-ph','lb-em','lb-addr','lb-web','lb-desc'].forEach(function(id){setVal(id,'');});
+  }).catch(function(e){ showErr('lb-err',e.message); });
+}
+
+// ════════════════════════════════════════════════
+// SUPER ADMIN
+// ════════════════════════════════════════════════
+function initAdmin() {
+  aTab('dashboard');
+  updateATime();
+  setInterval(updateATime, 30000);
+  loadBadges();
+}
+function updateATime() { setTxt('a-time', new Date().toLocaleString('en-CA',{dateStyle:'medium',timeStyle:'short'})); }
+
+function loadBadges() {
+  db.collection('listing_requests').where('status','==','pending').get().then(function(s){ setTxt('bdg-pend',s.size); });
+  db.collection('reviews').where('flagged','==',true).get().then(function(s){ setTxt('bdg-flag',s.size); });
+}
+
+function aTab(t) {
+  adminTab_cur=t;
+  document.querySelectorAll('[id^="asl-"]').forEach(function(el){el.classList.remove('act');});
+  var el=document.getElementById('asl-'+t); if(el) el.classList.add('act');
+  var titles={dashboard:'📊 Dashboard',pending:'⏳ Pending Approvals',listings:'📋 All Listings',add:'➕ Add Listing',bulk:'📤 Bulk Import',places:'🌐 Google Places Import',users:'👥 Users',reviews:'⭐ Review Moderation',accounts:'🏢 Business Accounts',analytics:'📈 Analytics',industries:'🏭 Industries',settings:'⚙️ Settings'};
+  setTxt('a-title', titles[t]||t);
+  var c=document.getElementById('a-content'); if(!c) return;
+  c.innerHTML='<div class="load-c"><div class="spin"></div></div>';
+  var fns={dashboard:aDashboard,pending:aPending,listings:aListings,add:aAddForm,bulk:aBulk,places:aPlaces,users:aUsers,reviews:aReviews,accounts:aAccounts,analytics:aAnalytics,industries:aIndustries,settings:aSettings};
+  if(fns[t]) fns[t]();
+}
+
+function aDashboard() {
+  var c=document.getElementById('a-content');
+  Promise.all([
+    db.collection('businesses').where('approved','==',true).get(),
+    db.collection('reviews').get(),
+    db.collection('users').get(),
+    db.collection('listing_requests').where('status','==','pending').get()
+  ]).then(function(res){
+    var bizzes=res[0], revs=res[1], users=res[2], pend=res[3];
+    var recent=bizzes.docs.slice(0,8);
+    c.innerHTML=
+      '<div class="stats-row">' +
+      '<div class="stat-c"><div class="stat-n">'+bizzes.size+'</div><div class="stat-l">Active Listings</div></div>' +
+      '<div class="stat-c"><div class="stat-n">'+revs.size+'</div><div class="stat-l">Total Reviews</div></div>' +
+      '<div class="stat-c"><div class="stat-n">'+users.size+'</div><div class="stat-l">Registered Users</div></div>' +
+      '<div class="stat-c"><div class="stat-n">'+pend.size+'</div><div class="stat-l">Pending Approvals</div></div>' +
+      '</div>' +
+      '<div class="tbl-wrap"><div class="tbl-head"><h3>Recent Listings</h3><button class="btn btn-red btn-sm" onclick="aTab(\'add\')">+ Add Listing</button></div>' +
+      '<table><thead><tr><th>Business</th><th>Industry</th><th>Province</th><th>Rating</th><th>Reviews</th><th>Actions</th></tr></thead>' +
+      '<tbody>'+recent.map(function(d){var b=Object.assign({id:d.id},d.data());var ind=INDUSTRIES.find(function(i){return i.id===b.industry;})||{icon:'🏢',name:b.industry||''};
+        return '<tr><td><strong>'+escHtml(b.name||'')+'</strong><br><span style="font-size:11px;color:var(--grey-dark);">'+(b.city||'')+'</span></td>' +
+        '<td>'+ind.icon+' '+ind.name+'</td><td>'+(b.province||'')+'</td>' +
+        '<td>'+starsHTML(b.avgRating||0)+' '+(b.avgRating||0).toFixed(1)+'</td><td>'+(b.reviewCount||0)+'</td>' +
+        '<td><div class="td-acts"><button class="btn btn-white btn-sm" onclick="openDetail(\''+b.id+'\')">View</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="aDelBiz(\''+b.id+'\')">Delete</button></div></td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }).catch(function(e){document.getElementById('a-content').innerHTML='<p style="color:var(--grey-dark);">'+e.message+'</p>';});
+}
+
+function aPending() {
+  var c=document.getElementById('a-content');
+  db.collection('listing_requests').where('status','==','pending').orderBy('submittedAt','desc').get().then(function(snap){
+    if(snap.empty){c.innerHTML='<div class="empty"><div class="eico">✅</div><h3>All Clear!</h3><p>No pending approvals.</p></div>';return;}
+    c.innerHTML='<div class="tbl-wrap"><div class="tbl-head"><h3>'+snap.size+' Pending Requests</h3></div>' +
+      '<table><thead><tr><th>Business</th><th>Industry</th><th>Province</th><th>Phone</th><th>Email</th><th>Date</th><th>Actions</th></tr></thead>' +
+      '<tbody>'+snap.docs.map(function(d){var r=Object.assign({id:d.id},d.data());var ind=INDUSTRIES.find(function(i){return i.id===r.industry;})||{icon:'🏢',name:r.industry||''};
+        return '<tr><td><strong>'+escHtml(r.name||'')+'</strong><br><span style="font-size:11px;color:var(--grey-dark);">'+(r.city||'')+' — '+(r.description||'').substring(0,50)+'…</span></td>' +
+        '<td>'+ind.icon+' '+ind.name+'</td><td>'+(r.province||'')+'</td><td>'+(r.phone||'')+'</td><td style="font-size:12px;">'+(r.email||'')+'</td><td style="font-size:11px;">'+fmtDate(r.submittedAt)+'</td>' +
+        '<td><div class="td-acts"><button class="btn btn-green btn-sm" onclick="aApprove(\''+r.id+'\')">✓ Approve</button><button class="btn btn-danger btn-sm" onclick="aReject(\''+r.id+'\')">✕ Reject</button></div></td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }).catch(function(e){document.getElementById('a-content').innerHTML='<p>'+e.message+'</p>';});
+}
+
+function aApprove(reqId) {
+  db.collection('listing_requests').doc(reqId).get().then(function(snap){
+    var r=snap.data();
+    db.collection('businesses').add({
+      name:r.name,industry:r.industry,province:r.province,city:r.city,
+      phone:r.phone,email:r.email,address:r.address||'',website:r.website||'',
+      description:r.description,approved:true,avgRating:0,reviewCount:0,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    }).then(function(){
+      db.collection('listing_requests').doc(reqId).update({status:'approved',approvedAt:firebase.firestore.FieldValue.serverTimestamp()});
+      toast('Listing approved & live! 🍁','ok'); loadBadges(); aPending();
+    });
+  });
+}
+
+function aReject(reqId) {
+  confirm2('Reject this request?','',function(){
+    db.collection('listing_requests').doc(reqId).update({status:'rejected'}).then(function(){ toast('Rejected.','err'); loadBadges(); aPending(); });
+  });
+}
+
+function aListings() {
+  var c=document.getElementById('a-content');
+  db.collection('businesses').where('approved','==',true).orderBy('createdAt','desc').get().then(function(snap){
+    c.innerHTML=
+      '<div style="display:flex;gap:10px;margin-bottom:16px;">' +
+      '<input type="text" id="adm-q" class="inp" placeholder="Search…" oninput="aFilterTbl()" style="max-width:280px;">' +
+      '<button class="btn btn-red btn-sm" onclick="aTab(\'add\')">+ Add</button>' +
+      '<button class="btn btn-dark btn-sm" onclick="aTab(\'bulk\')">📤 Bulk</button></div>' +
+      '<div class="tbl-wrap"><div class="tbl-head"><h3>'+snap.size+' Listings</h3></div>' +
+      '<table><thead><tr><th>Business</th><th>Industry</th><th>Province</th><th>Rating</th><th>Reviews</th><th>Email</th><th>Actions</th></tr></thead>' +
+      '<tbody id="a-tbl-body">'+snap.docs.map(function(d){var b=Object.assign({id:d.id},d.data());var ind=INDUSTRIES.find(function(i){return i.id===b.industry;})||{icon:'🏢',name:b.industry||''};
+        return '<tr data-s="'+((b.name||'')+' '+(b.city||'')+' '+(b.province||'')).toLowerCase()+'"><td><strong>'+escHtml(b.name||'')+'</strong><br><span style="font-size:11px;color:var(--grey-dark);">'+(b.city||'')+'</span></td>' +
+        '<td>'+ind.icon+' '+ind.name+'</td><td>'+(b.province||'')+'</td>' +
+        '<td>'+(b.avgRating||0).toFixed(1)+' ⭐</td><td>'+(b.reviewCount||0)+'</td>' +
+        '<td style="font-size:12px;">'+(b.email||'')+'</td>' +
+        '<td><div class="td-acts"><button class="btn btn-white btn-sm" onclick="openDetail(\''+b.id+'\')">View</button><button class="btn btn-danger btn-sm" onclick="aDelBiz(\''+b.id+'\')">Delete</button></div></td></tr>';
+      }).join('')+'</tbody></table></div>';
+  });
+}
+function aFilterTbl(){var q=(document.getElementById('adm-q').value||'').toLowerCase();document.querySelectorAll('#a-tbl-body tr').forEach(function(r){r.style.display=r.dataset.s&&r.dataset.s.includes(q)?'':'none';});}
+
+function aDelBiz(id){confirm2('Delete this listing?','Permanent. Cannot be undone.',function(){db.collection('businesses').doc(id).delete().then(function(){toast('Deleted.','err');aTab('listings');});});}
+
+function aAddForm() {
+  document.getElementById('a-content').innerHTML=
+    '<div class="tbl-wrap" style="max-width:680px;"><div class="tbl-head"><h3>Add New Listing</h3></div><div style="padding:24px;">' +
+    '<div class="g2">' +
+    '<div class="form-group gc2"><label class="label">Business Name *</label><input type="text" id="al-nm" class="inp" placeholder="e.g. Smith\'s Plumbing"></div>' +
+    '<div class="form-group"><label class="label">Industry *</label><select id="al-ind" class="inp inp-sel"><option value="">Select</option>'+INDUSTRIES.map(function(i){return '<option value="'+i.id+'">'+i.icon+' '+i.name+'</option>';}).join('')+'</select></div>' +
+    '<div class="form-group"><label class="label">Province *</label><select id="al-prov" class="inp inp-sel"><option value="">Select</option><option>Ontario</option><option>Quebec</option><option>British Columbia</option><option>Alberta</option><option>Manitoba</option><option>Saskatchewan</option><option>Nova Scotia</option><option>New Brunswick</option><option>Newfoundland</option></select></div>' +
+    '<div class="form-group"><label class="label">City *</label><input type="text" id="al-city" class="inp" placeholder="Toronto"></div>' +
+    '<div class="form-group"><label class="label">Phone *</label><input type="tel" id="al-ph" class="inp" placeholder="416-555-0100"></div>' +
+    '<div class="form-group gc2"><label class="label">Email *</label><input type="email" id="al-em" class="inp" placeholder="biz@email.com"></div>' +
+    '<div class="form-group gc2"><label class="label">Address</label><input type="text" id="al-addr" class="inp" placeholder="123 Main St"></div>' +
+    '<div class="form-group gc2"><label class="label">Website</label><input type="url" id="al-web" class="inp" placeholder="https://"></div>' +
+    '<div class="form-group gc2"><label class="label">Description</label><textarea id="al-desc" class="inp inp-ta" placeholder="Describe the business…"></textarea></div>' +
+    '</div><button class="btn btn-red" onclick="aSaveListing()">✅ Create Listing</button>' +
+    '<div id="al-ok" class="ok-box hidden" style="margin-top:10px;"></div></div></div>';
+}
+function aSaveListing(){
+  var nm=gv('al-nm'),ind=gv2('al-ind'),prov=gv2('al-prov'),city=gv('al-city'),ph=gv('al-ph'),em=gv('al-em');
+  if(!nm||!ind||!prov||!city||!ph||!em){toast('Fill all required fields.','err');return;}
+  db.collection('businesses').add({name:nm,industry:ind,province:prov,city:city,phone:ph,email:em,address:gv('al-addr'),website:gv('al-web'),description:gv('al-desc'),approved:true,avgRating:0,reviewCount:0,createdAt:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){
+    showEl('al-ok','✅ Listing created and live!'); toast('Listing created! 🍁','ok');
+  }).catch(function(e){toast(e.message,'err');});
+}
+
+function aBulk(){
+  document.getElementById('a-content').innerHTML=
+    '<div class="tbl-wrap" style="max-width:760px;"><div class="tbl-head"><h3>Bulk Import</h3></div><div style="padding:24px;">' +
+    '<p style="color:var(--grey-dark);font-size:13px;margin-bottom:16px;">CSV format: <code>Name, Phone, Email, Address, Industry ID, Province, City, Website, Description</code></p>' +
+    '<div class="uzone" onclick="document.getElementById(\'csv-f\').click()">' +
+    '<div style="font-size:36px;margin-bottom:10px;">📁</div>' +
+    '<p style="font-weight:700;margin-bottom:4px;">Click to upload CSV file</p>' +
+    '<p style="font-size:13px;color:var(--grey-dark);">or paste data below</p>' +
+    '<input type="file" id="csv-f" accept=".csv" style="display:none;" onchange="loadCSV(event)"></div>' +
+    '<textarea id="bulk-d" class="inp inp-ta" style="margin-top:14px;height:160px;font-family:monospace;font-size:12px;" placeholder="Tim\'s Bakery, 416-555-0101, tims@email.com, 123 Main St, restaurants, Ontario, Toronto, https://tims.ca, Artisan bakery"></textarea>' +
+    '<div style="display:flex;gap:10px;margin-top:14px;">' +
+    '<button class="btn btn-white" onclick="previewBulk()">Preview</button>' +
+    '<button class="btn btn-red" onclick="uploadBulk()">✅ Upload All</button></div>' +
+    '<div id="bulk-prev" style="margin-top:16px;"></div></div></div>';
+}
+function loadCSV(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){setVal('bulk-d',ev.target.result);};r.readAsText(f);}
+function previewBulk(){var rows=(gv('bulk-d')||'').split('\n').filter(function(l){return l.trim();});var p=document.getElementById('bulk-prev');if(!rows.length){p.innerHTML='';return;}p.innerHTML='<div class="tbl-wrap"><div class="tbl-head"><h3>Preview: '+rows.length+' listings</h3></div><table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Industry</th><th>Province</th><th>City</th></tr></thead><tbody>'+rows.map(function(r){var c=r.split(',').map(function(s){return s.trim();});return'<tr><td>'+c[0]+'</td><td>'+c[1]+'</td><td>'+c[2]+'</td><td>'+c[4]+'</td><td>'+c[5]+'</td><td>'+c[6]+'</td></tr>';}).join('')+'</tbody></table></div>';}
+function uploadBulk(){var rows=(gv('bulk-d')||'').split('\n').filter(function(l){return l.trim();});if(!rows.length){toast('No data.','err');return;}var b=db.batch();rows.forEach(function(r){var c=r.split(',').map(function(s){return s.trim();});var ref=db.collection('businesses').doc();b.set(ref,{name:c[0]||'',phone:c[1]||'',email:c[2]||'',address:c[3]||'',industry:c[4]||'',province:c[5]||'',city:c[6]||'',website:c[7]||'',description:c[8]||'',approved:true,avgRating:0,reviewCount:0,createdAt:firebase.firestore.FieldValue.serverTimestamp()});});b.commit().then(function(){toast(rows.length+' listings uploaded! 🍁','ok');aTab('listings');}).catch(function(e){toast(e.message,'err');});}
+
+function aPlaces(){
+  document.getElementById('a-content').innerHTML=
+    '<div class="tbl-wrap" style="max-width:800px;"><div class="tbl-head"><h3>🌐 Import from Google Places</h3></div><div style="padding:24px;">' +
+    '<p style="color:var(--grey-dark);font-size:13px;margin-bottom:18px;">Search Google Places to find real Canadian businesses to import.</p>' +
+    '<div class="g2"><div class="form-group"><label class="label">Search Query</label><input type="text" id="gp-q" class="inp" placeholder="restaurants, lawyers, plumbers…"></div>' +
+    '<div class="form-group"><label class="label">City</label><select id="gp-c" class="inp inp-sel"><option>Toronto</option><option>Vancouver</option><option>Montreal</option><option>Calgary</option><option>Ottawa</option><option>Edmonton</option><option>Winnipeg</option><option>Halifax</option></select></div></div>' +
+    '<div class="form-group"><label class="label">Assign Industry</label><select id="gp-ind" class="inp inp-sel" style="max-width:300px;">'+INDUSTRIES.map(function(i){return'<option value="'+i.id+'">'+i.icon+' '+i.name+'</option>';}).join('')+'</select></div>' +
+    '<button class="btn btn-dark" onclick="gpSearch()" style="margin-bottom:16px;">🔍 Search</button>' +
+    '<div id="gp-res"></div><div id="gp-imp-btn" class="hidden" style="margin-top:14px;"><button class="btn btn-red" onclick="gpImport()">✅ Import Selected</button></div>' +
+    '</div></div>';
+}
+function gpSearch(){
+  var q=gv('gp-q'),city=gv2('gp-c');
+  if(!q){toast('Enter a search query.','err');return;}
+  var res=document.getElementById('gp-res');
+  res.innerHTML='<div class="load-c"><div class="spin"></div></div>';
+  selectedGP=[];
+  // Generate sample data (real API requires backend proxy for CORS)
+  var provMap={Toronto:'Ontario',Vancouver:'British Columbia',Montreal:'Quebec',Calgary:'Alberta',Ottawa:'Ontario',Edmonton:'Alberta',Winnipeg:'Manitoba',Halifax:'Nova Scotia'};
+  var areaCodes={Toronto:'416',Vancouver:'604',Montreal:'514',Calgary:'403',Ottawa:'613',Edmonton:'780',Winnipeg:'204',Halifax:'902'};
+  var prov=provMap[city]||'Ontario', ac=areaCodes[city]||'416';
+  var places=Array.from({length:12},function(_,i){return {id:'gp_'+Date.now()+i,name:city+' '+q.charAt(0).toUpperCase()+q.slice(1)+' '+(i+1),address:(100+i*11)+' Main St, '+city+', '+prov+', Canada',phone:ac+'-555-'+String(1000+i).padStart(4,'0'),rating:(3.2+Math.random()*1.7).toFixed(1),city:city,province:prov};});
+  res.innerHTML='<div class="tbl-wrap"><div class="tbl-head"><h3>'+places.length+' Results</h3><span style="font-size:12px;color:var(--grey-dark);">Note: Using sample data. Live API requires backend proxy.</span></div>' +
+    '<table><thead><tr><th><input type="checkbox" onchange="gpSelAll(this,'+JSON.stringify(places).replace(/</g,'\\u003c').replace(/>/g,'\\u003e')+')" id="gp-all"></th><th>Name</th><th>Address</th><th>Phone</th><th>Rating</th></tr></thead>' +
+    '<tbody>'+places.map(function(p,i){return'<tr><td><input type="checkbox" onchange="gpToggle('+i+','+JSON.stringify(p).replace(/</g,'\\u003c').replace(/>/g,'\\u003e')+')" id="gpc-'+i+'"></td><td><strong>'+escHtml(p.name)+'</strong></td><td style="font-size:12px;">'+escHtml(p.address)+'</td><td style="font-size:12px;">'+p.phone+'</td><td>⭐ '+p.rating+'</td></tr>';}).join('')+'</tbody></table></div>';
+  document.getElementById('gp-imp-btn').classList.remove('hidden');
+  window._gpPlaces=places;
+}
+function gpSelAll(cb,places){selectedGP=cb.checked?places.slice():[]; places.forEach(function(_,i){var el=document.getElementById('gpc-'+i);if(el)el.checked=cb.checked;});}
+function gpToggle(i,p){var idx=selectedGP.findIndex(function(x){return x.id===p.id;});if(idx>-1)selectedGP.splice(idx,1);else selectedGP.push(p);}
+function gpImport(){
+  if(!selectedGP.length){toast('Select at least one.','err');return;}
+  var ind=gv2('gp-ind')||'restaurants';
+  var b=db.batch();
+  selectedGP.forEach(function(p){var ref=db.collection('businesses').doc();b.set(ref,{name:p.name,industry:ind,province:p.province,city:p.city,address:p.address,phone:p.phone,email:'',website:'',description:p.name+' — imported via Google Places.',approved:true,avgRating:parseFloat(p.rating)||0,reviewCount:0,createdAt:firebase.firestore.FieldValue.serverTimestamp()});});
+  b.commit().then(function(){toast(selectedGP.length+' businesses imported! 🍁','ok');selectedGP=[];aTab('listings');}).catch(function(e){toast(e.message,'err');});
+}
+
+function aUsers(){
+  db.collection('users').orderBy('createdAt','desc').limit(50).get().then(function(snap){
+    document.getElementById('a-content').innerHTML='<div class="tbl-wrap"><div class="tbl-head"><h3>'+snap.size+' Users</h3></div>' +
+      '<table><thead><tr><th>Name</th><th>Email</th><th>Verified</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead>' +
+      '<tbody>'+snap.docs.map(function(d){var u=Object.assign({id:d.id},d.data());return'<tr>' +
+        '<td><div style="display:flex;align-items:center;gap:8px;"><div class="avatar" style="width:30px;height:30px;font-size:12px;">'+(u.displayName||u.email||'U')[0].toUpperCase()+'</div><strong>'+(u.displayName||'—')+'</strong></div></td>' +
+        '<td style="font-size:12px;">'+(u.email||'')+'</td>' +
+        '<td>'+(u.emailVerified?'<span class="tag tag-green">✓ Verified</span>':'<span class="tag tag-red">Unverified</span>')+'</td>' +
+        '<td><span class="tag tag-grey">'+(u.role||'user')+'</span></td>' +
+        '<td style="font-size:11px;">'+fmtDate(u.createdAt)+'</td>' +
+        '<td><button class="btn btn-danger btn-sm" onclick="aDisableUser(\''+u.id+'\',\''+escHtml(u.email||'')+'\')">Disable</button></td></tr>';
+      }).join('')+'</tbody></table></div>';
+  });
+}
+function aDisableUser(uid,email){confirm2('Disable '+email+'?','They will not be able to sign in.',function(){db.collection('users').doc(uid).update({disabled:true}).then(function(){toast('User disabled.','err');aUsers();});});}
+
+function aReviews(){
+  db.collection('reviews').orderBy('createdAt','desc').limit(100).get().then(function(snap){
+    document.getElementById('a-content').innerHTML=
+      '<div style="display:flex;gap:8px;margin-bottom:14px;">' +
+      '<button class="btn btn-white btn-sm" onclick="filterRevs(\'all\',this)">All</button>' +
+      '<button class="btn btn-white btn-sm" onclick="filterRevs(\'flagged\',this)">🚩 Flagged</button></div>' +
+      '<div class="tbl-wrap"><div class="tbl-head"><h3>'+snap.size+' Reviews</h3></div>' +
+      '<table><thead><tr><th>User</th><th>Rating</th><th>Review</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>' +
+      '<tbody id="rev-tbody">'+snap.docs.map(function(d){var r=Object.assign({id:d.id},d.data());return'<tr data-fl="'+r.flagged+'">' +
+        '<td style="font-size:12px;"><strong>'+(r.userName||'—')+'</strong><br>'+(r.userEmail||'')+'</td>' +
+        '<td><span class="stars" style="font-size:12px;">'+'★'.repeat(r.rating||0)+'</span></td>' +
+        '<td style="max-width:200px;font-size:12px;">'+(r.text||'').substring(0,90)+'…</td>' +
+        '<td style="font-size:11px;">'+fmtDate(r.createdAt)+'</td>' +
+        '<td>'+(r.flagged?'<span class="tag tag-red">🚩 Flagged</span>':'<span class="tag tag-green">✓ Visible</span>')+'</td>' +
+        '<td><div class="td-acts">' +
+        '<button class="btn btn-white btn-sm" onclick="aToggleFlag(\''+r.id+'\','+r.flagged+')">'+(r.flagged?'Restore':'Flag')+'</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="adminDelRev(\''+r.id+'\')">Delete</button>' +
+        '<button class="btn btn-white btn-sm" onclick="openReplyModal(\''+r.id+'\')">Reply</button>' +
+        '</div></td></tr>';}).join('')+'</tbody></table></div>';
+  });
+}
+function filterRevs(t,btn){document.querySelectorAll('#rev-tbody tr').forEach(function(r){r.style.display=(t==='all'||r.dataset.fl===String(t==='flagged'))?'':'none';});}
+function aToggleFlag(id,cur){db.collection('reviews').doc(id).update({flagged:!cur}).then(function(){toast(cur?'Restored.':'Flagged.', cur?'ok':'err');loadBadges();aReviews();});}
+function adminDelRev(id){
+  confirm2('Delete review?','Permanent.',function(){
+    db.collection('reviews').doc(id).get().then(function(d){
+      var bid=d.data()&&d.data().bizId;
+      db.collection('reviews').doc(id).delete().then(function(){
+        if(bid)updateBizStats(bid);
+        toast('Review deleted.','err');
+        if(activeBizId===bid)loadDetailReviews(bid);
+        if(adminTab_cur==='reviews')aReviews();
+      });
+    });
+  });
+}
+
+function aAccounts(){
+  db.collection('businesses').where('approved','==',true).orderBy('createdAt','desc').get().then(function(snap){
+    document.getElementById('a-content').innerHTML='<div class="tbl-wrap"><div class="tbl-head"><h3>'+snap.size+' Business Accounts</h3></div>' +
+      '<table><thead><tr><th>Business</th><th>Email</th><th>Industry</th><th>Province</th><th>Rating</th><th>Reviews</th><th>Actions</th></tr></thead>' +
+      '<tbody>'+snap.docs.map(function(d){var b=Object.assign({id:d.id},d.data());var ind=INDUSTRIES.find(function(i){return i.id===b.industry;})||{icon:'🏢',name:b.industry||''};
+        return'<tr><td><strong>'+escHtml(b.name||'')+'</strong></td><td style="font-size:12px;">'+(b.email||'')+'</td>' +
+        '<td>'+ind.icon+' '+ind.name+'</td><td>'+(b.province||'')+'</td>' +
+        '<td>'+(b.avgRating||0).toFixed(1)+' ⭐</td><td>'+(b.reviewCount||0)+'</td>' +
+        '<td><div class="td-acts"><button class="btn btn-white btn-sm" onclick="openDetail(\''+b.id+'\')">View</button><button class="btn btn-danger btn-sm" onclick="aDelBiz(\''+b.id+'\')">Remove</button></div></td></tr>';
+      }).join('')+'</tbody></table></div>';
+  });
+}
+
+function aAnalytics(){
+  Promise.all([db.collection('businesses').where('approved','==',true).get(),db.collection('reviews').get()]).then(function(res){
+    var bizzes=res[0].docs.map(function(d){return d.data();}),revs=res[1].docs.map(function(d){return d.data();});
+    var indCounts={};INDUSTRIES.forEach(function(i){indCounts[i.id]=0;});
+    bizzes.forEach(function(b){if(indCounts[b.industry]!==undefined)indCounts[b.industry]++;});
+    var sorted=Object.entries(indCounts).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+    var mx=sorted[0]?sorted[0][1]:1;
+    var rdist=[5,4,3,2,1].map(function(s){return{s:s,c:revs.filter(function(r){return r.rating===s;}).length};});
+    var rmx=rdist[0]?rdist[0].c:1;
+    var avg=revs.length?revs.reduce(function(a,r){return a+(r.rating||0);},0)/revs.length:0;
+    document.getElementById('a-content').innerHTML=
+      '<div class="stats-row"><div class="stat-c"><div class="stat-n">'+bizzes.length+'</div><div class="stat-l">Total Listings</div></div>' +
+      '<div class="stat-c"><div class="stat-n">'+revs.length+'</div><div class="stat-l">Total Reviews</div></div>' +
+      '<div class="stat-c"><div class="stat-n">'+revs.filter(function(r){return r.flagged;}).length+'</div><div class="stat-l">Flagged Reviews</div></div>' +
+      '<div class="stat-c"><div class="stat-n">'+avg.toFixed(1)+'</div><div class="stat-l">Avg Rating</div></div></div>' +
+      '<div class="charts-grid">' +
+      '<div class="tbl-wrap"><div class="tbl-head"><h3>Listings by Industry</h3></div><div style="padding:20px;"><div class="bar-chart">'+
+      sorted.map(function(e){var ind=INDUSTRIES.find(function(i){return i.id===e[0];})||{icon:'🏢',name:e[0]};return'<div class="bar-row"><div class="bar-lbl">'+ind.icon+' '+ind.name.split(' ')[0]+'</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(e[1]/mx*100)+'%"><span>'+e[1]+'</span></div></div><div class="bar-val">'+e[1]+'</div></div>';}).join('')+
+      '</div></div></div>' +
+      '<div class="tbl-wrap"><div class="tbl-head"><h3>Rating Distribution</h3></div><div style="padding:20px;"><div class="bar-chart">'+
+      rdist.map(function(d){return'<div class="bar-row"><div class="bar-lbl">'+'★'.repeat(d.s)+' '+d.s+' star</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(d.c/(rmx||1)*100)+'%"><span>'+d.c+'</span></div></div><div class="bar-val">'+d.c+'</div></div>';}).join('')+
+      '</div></div></div></div>';
+  });
+}
+
+function aIndustries(){
+  document.getElementById('a-content').innerHTML='<div class="ind-grid">'+INDUSTRIES.map(function(i){return'<div class="ind-tile" onclick="filterByIndustry(\''+i.id+'\');showPage(\'browse\')"><span class="t-icon">'+i.icon+'</span><div class="t-name">'+i.name+'</div><div class="t-cnt" id="aitc-'+i.id+'">…</div></div>';}).join('')+'</div>';
+  INDUSTRIES.forEach(function(i){db.collection('businesses').where('industry','==',i.id).where('approved','==',true).get().then(function(s){var el=document.getElementById('aitc-'+i.id);if(el)el.textContent=s.size+' listings';});});
+}
+
+function aSettings(){
+  document.getElementById('a-content').innerHTML='<div class="tbl-wrap" style="max-width:580px;"><div class="tbl-head"><h3>System Settings</h3></div><div style="padding:24px;">' +
+    '<div style="background:var(--grey);border-radius:10px;padding:18px;margin-bottom:14px;"><h4 style="font-size:14px;font-weight:700;margin-bottom:4px;">Admin Account</h4><p style="font-size:13px;color:var(--grey-dark);">To change password use the Forgot Password flow or Firebase Console.</p></div>' +
+    '<div style="background:var(--grey);border-radius:10px;padding:18px;margin-bottom:14px;"><h4 style="font-size:14px;font-weight:700;margin-bottom:4px;">Firebase Project</h4><p style="font-size:13px;color:var(--grey-dark);">Project: canada-directory-79392 · Region: Montreal</p><p style="font-size:13px;color:var(--grey-dark);margin-top:3px;"><a href="https://console.firebase.google.com/project/canada-directory-79392" target="_blank" style="color:var(--red);">Open Firebase Console →</a></p></div>' +
+    '<div style="background:#FFE5E3;border-radius:10px;padding:18px;"><h4 style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:4px;">🔐 Emergency Access</h4><p style="font-size:13px;color:var(--grey-dark);">If locked out, go to Firebase Console → Authentication → Users to reset your password.</p></div>' +
+    '</div></div>';
+}
+
+// ════════════════════════════════════════════════
+// BUSINESS PORTAL
+// ════════════════════════════════════════════════
+function initBizPortal(){
+  if(!CU){showPage('login');return;}
+  db.collection('businesses').where('email','==',CU.email).where('approved','==',true).limit(1).get().then(function(snap){
+    if(!snap.empty){var b=Object.assign({id:snap.docs[0].id},snap.docs[0].data());activeBizId=b.id;setTxt('bsp-name',b.name);var av=document.getElementById('b-av');if(av)av.textContent=(b.name||'B')[0];}
+    bTab('overview');
+  });
+}
+
+function bTab(t){
+  bizTab_cur=t;
+  document.querySelectorAll('[id^="bsl-"]').forEach(function(el){el.classList.remove('act');});
+  var el=document.getElementById('bsl-'+t);if(el)el.classList.add('act');
+  var titles={overview:'Overview',profile:'Business Profile',reviews:'Reviews & Ratings',locations:'Locations',photos:'Photos & Media',analytics:'Analytics',leads:'Lead Tracking',settings:'Account Settings',support:'Support'};
+  setTxt('b-title',titles[t]||t);
+  var c=document.getElementById('b-content');if(!c)return;
+  c.innerHTML='<div class="load-c"><div class="spin"></div></div>';
+  var fns={overview:bOverview,profile:bProfile,reviews:bReviews,locations:bLocations,photos:bPhotos,analytics:bAnalytics,leads:bLeads,settings:bSettings,support:bSupport};
+  if(fns[t])fns[t]();
+}
+
+function bOverview(){
+  if(!activeBizId){document.getElementById('b-content').innerHTML='<div class="empty"><div class="eico">🏢</div><h3>No Listing Found</h3><p>Your email is not linked to an approved listing.</p><button class="btn btn-red" style="margin-top:16px;" onclick="openModal(\'m-listbiz\')">Request a Listing</button></div>';return;}
+  Promise.all([db.collection('businesses').doc(activeBizId).get(),db.collection('reviews').where('bizId','==',activeBizId).where('flagged','==',false).get()]).then(function(res){
+    var b=Object.assign({id:res[0].id},res[0].data()),revs=res[1].docs.map(function(d){return d.data();});
+    var avg=b.avgRating||0;
+    document.getElementById('b-content').innerHTML=
+      '<div class="stats-row" style="grid-template-columns:repeat(3,1fr);">' +
+      '<div class="stat-c"><div class="stat-n">'+revs.length+'</div><div class="stat-l">Reviews</div></div>' +
+      '<div class="stat-c"><div class="stat-n">'+avg.toFixed(1)+'</div><div class="stat-l">Avg Rating</div></div>' +
+      '<div class="stat-c"><div class="stat-n">'+starsHTML(avg)+'</div><div class="stat-l">Star Level</div></div></div>' +
+      '<div class="tbl-wrap"><div class="tbl-head"><h3>'+escHtml(b.name||'')+'</h3><span class="tag tag-green">✓ Active</span></div><div style="padding:20px;">' +
+      '<div class="irow"><span class="ico">📍</span><div><div class="ilbl">Address</div>'+(b.address||b.city+', '+b.province||'Not set')+'</div></div>' +
+      '<div class="irow"><span class="ico">📞</span><div><div class="ilbl">Phone</div>'+(b.phone||'Not set')+'</div></div>' +
+      '<div class="irow"><span class="ico">📧</span><div><div class="ilbl">Email</div>'+(b.email||'Not set')+'</div></div>' +
+      '<div class="irow"><span class="ico">🌐</span><div><div class="ilbl">Website</div>'+(b.website||'Not set')+'</div></div>' +
+      '<div style="display:flex;gap:8px;margin-top:14px;"><button class="btn btn-red btn-sm" onclick="openDetail(\''+b.id+'\')">View Public Listing →</button><button class="btn btn-white btn-sm" onclick="bTab(\'profile\')">Edit Profile</button></div>' +
+      '</div></div>';
+  });
+}
+
+function bProfile(){
+  if(!activeBizId){document.getElementById('b-content').innerHTML='<p>No listing found.</p>';return;}
+  db.collection('businesses').doc(activeBizId).get().then(function(snap){
+    var b=Object.assign({id:snap.id},snap.data());
+    document.getElementById('b-content').innerHTML=
+      '<div class="tbl-wrap" style="max-width:640px;"><div class="tbl-head"><h3>Edit Business Profile</h3></div><div style="padding:24px;">' +
+      '<div style="background:#FFF8E7;border-radius:8px;padding:12px;font-size:13px;color:#7A5900;margin-bottom:18px;">⚠️ Major changes require admin approval before going live.</div>' +
+      '<div class="form-group"><label class="label">Business Name</label><input type="text" id="bp-nm" class="inp" value="'+escHtml(b.name||'')+'"></div>' +
+      '<div class="form-group"><label class="label">Phone</label><input type="tel" id="bp-ph" class="inp" value="'+escHtml(b.phone||'')+'"></div>' +
+      '<div class="form-group"><label class="label">Address</label><input type="text" id="bp-addr" class="inp" value="'+escHtml(b.address||'')+'"></div>' +
+      '<div class="form-group"><label class="label">Website</label><input type="url" id="bp-web" class="inp" value="'+escHtml(b.website||'')+'"></div>' +
+      '<div class="form-group"><label class="label">Description</label><textarea id="bp-desc" class="inp inp-ta">'+escHtml(b.description||'')+'</textarea></div>' +
+      '<button class="btn btn-red" onclick="bSaveProfile()">Save Changes</button>' +
+      '<div id="bp-ok" class="ok-box hidden" style="margin-top:10px;"></div></div></div>';
+  });
+}
+function bSaveProfile(){
+  db.collection('businesses').doc(activeBizId).update({phone:gv('bp-ph'),address:gv('bp-addr'),website:gv('bp-web'),description:gv('bp-desc'),updatedAt:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){showEl('bp-ok','✅ Profile updated!');toast('Profile saved! 🍁','ok');}).catch(function(e){toast(e.message,'err');});
+}
+
+function bReviews(){
+  if(!activeBizId){document.getElementById('b-content').innerHTML='<p>No listing.</p>';return;}
+  db.collection('reviews').where('bizId','==',activeBizId).orderBy('createdAt','desc').get().then(function(snap){
+    var revs=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    document.getElementById('b-content').innerHTML=
+      '<div class="tbl-wrap"><div class="tbl-head"><h3>'+revs.length+' Reviews</h3><span style="font-size:12px;color:var(--grey-dark);">Ratings cannot be disabled. You can reply to any review.</span></div>' +
+      (revs.length?'<table><thead><tr><th>User</th><th>Rating</th><th>Review</th><th>Date</th><th>Status</th><th>Reply</th></tr></thead><tbody>'+
+      revs.map(function(r){return'<tr><td><strong>'+(r.userName||'Anon')+'</strong></td>' +
+        '<td><span class="stars" style="font-size:12px;">'+'★'.repeat(r.rating||0)+'</span></td>' +
+        '<td style="max-width:240px;font-size:12px;">'+escHtml((r.text||'').substring(0,100))+(r.reply?'<div class="reply-bub" style="margin-top:6px;"><div class="rl">Your reply</div><p style="font-size:12px;color:var(--grey-dark);">'+escHtml(r.reply)+'</p></div>':'')+'</td>' +
+        '<td style="font-size:11px;">'+fmtDate(r.createdAt)+'</td>' +
+        '<td>'+(r.flagged?'<span class="tag tag-red">Flagged</span>':'<span class="tag tag-green">Visible</span>')+'</td>' +
+        '<td><button class="btn btn-white btn-sm" onclick="openReplyModal(\''+r.id+'\')">💬 Reply</button></td></tr>';}).join('')+'</tbody></table>' :
+      '<div class="empty"><div class="eico">⭐</div><h3>No reviews yet</h3><p>Reviews will appear here once customers rate your business.</p></div>')+'</div>';
+  });
+}
+
+function bLocations(){
+  document.getElementById('b-content').innerHTML=
+    '<div class="tbl-wrap" style="max-width:600px;"><div class="tbl-head"><h3>Add Additional Location</h3></div><div style="padding:24px;">' +
+    '<p style="color:var(--grey-dark);font-size:13px;margin-bottom:18px;">New locations require admin approval before going live.</p>' +
+    '<div class="form-group"><label class="label">Location Name</label><input type="text" id="lc-nm" class="inp" placeholder="e.g. Downtown Branch"></div>' +
+    '<div class="form-group"><label class="label">Address</label><input type="text" id="lc-addr" class="inp" placeholder="456 Main St, City, Province"></div>' +
+    '<div class="form-group"><label class="label">Phone</label><input type="tel" id="lc-ph" class="inp" placeholder="416-555-0100"></div>' +
+    '<button class="btn btn-red" onclick="bSubmitLoc()">Submit for Approval</button>' +
+    '<div id="lc-ok" class="ok-box hidden" style="margin-top:10px;"></div>' +
+    '<hr style="margin:24px 0;border-color:var(--grey);"><h3 style="font-family:\'Fraunces\',serif;font-size:17px;margin-bottom:10px;">Bulk Location Upload</h3>' +
+    '<p style="font-size:13px;color:var(--grey-dark);margin-bottom:12px;">Format: Location Name, Address, Phone</p>' +
+    '<textarea id="lc-bulk" class="inp inp-ta" style="font-family:monospace;font-size:12px;" placeholder="North Branch, 789 Oak Ave, Ontario, Mississauga, 905-555-0101"></textarea>' +
+    '<button class="btn btn-white" style="margin-top:10px;" onclick="bBulkLoc()">Submit All for Approval</button></div></div>';
+}
+function bSubmitLoc(){db.collection('location_requests').add({bizId:activeBizId,name:gv('lc-nm'),address:gv('lc-addr'),phone:gv('lc-ph'),status:'pending',submittedAt:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){showEl('lc-ok','✅ Submitted for admin approval!');toast('Location submitted!','ok');});}
+function bBulkLoc(){var rows=(gv('lc-bulk')||'').split('\n').filter(function(l){return l.trim();});if(!rows.length){toast('Enter data.','err');return;}var b=db.batch();rows.forEach(function(r){var c=r.split(',').map(function(s){return s.trim();});var ref=db.collection('location_requests').doc();b.set(ref,{bizId:activeBizId,name:c[0]||'',address:c[1]||'',phone:c[2]||'',status:'pending',submittedAt:firebase.firestore.FieldValue.serverTimestamp()});});b.commit().then(function(){toast(rows.length+' locations submitted!','ok');});}
+
+function bPhotos(){document.getElementById('b-content').innerHTML='<div class="tbl-wrap" style="max-width:560px;"><div class="tbl-head"><h3>📸 Photos & Media</h3></div><div style="padding:24px;"><div class="uzone"><div style="font-size:36px;margin-bottom:10px;">📷</div><p style="font-weight:700;">Click to upload photos</p><p style="font-size:13px;color:var(--grey-dark);">Requires Firebase Storage activation. Contact admin.</p></div></div></div>';}
+
+function bAnalytics(){
+  if(!activeBizId){document.getElementById('b-content').innerHTML='<p>No listing.</p>';return;}
+  db.collection('reviews').where('bizId','==',activeBizId).where('flagged','==',false).get().then(function(snap){
+    var revs=snap.docs.map(function(d){return d.data();});
+    var avg=revs.length?revs.reduce(function(a,r){return a+(r.rating||0);},0)/revs.length:0;
+    var dist=[5,4,3,2,1].map(function(s){return{s:s,c:revs.filter(function(r){return r.rating===s;}).length};});
+    var mx=dist[0]?dist[0].c:1;
+    document.getElementById('b-content').innerHTML=
+      '<div class="stats-row" style="grid-template-columns:repeat(3,1fr);">' +
+      '<div class="stat-c"><div class="stat-n">'+revs.length+'</div><div class="stat-l">Total Reviews</div></div>' +
+      '<div class="stat-c"><div class="stat-n">'+avg.toFixed(1)+'</div><div class="stat-l">Avg Rating</div></div>' +
+      '<div class="stat-c"><div class="stat-n">'+revs.filter(function(r){return r.rating>=4;}).length+'</div><div class="stat-l">4–5 Star Reviews</div></div></div>' +
+      '<div class="tbl-wrap" style="max-width:480px;"><div class="tbl-head"><h3>Rating Breakdown</h3></div><div style="padding:20px;"><div class="bar-chart">'+
+      dist.map(function(d){return'<div class="bar-row"><div class="bar-lbl">'+'★'.repeat(d.s)+' '+d.s+' stars</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(d.c/(revs.length||1)*100)+'%"><span>'+d.c+'</span></div></div><div class="bar-val">'+d.c+'</div></div>';}).join('')+
+      '</div></div></div>';
+  });
+}
+
+function bLeads(){document.getElementById('b-content').innerHTML='<div class="tbl-wrap"><div class="tbl-head"><h3>🎯 Lead Tracking</h3></div><div style="padding:24px;"><div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;"><div class="stat-c"><div class="stat-n">—</div><div class="stat-l">Profile Views</div></div><div class="stat-c"><div class="stat-n">—</div><div class="stat-l">Phone Clicks</div></div><div class="stat-c"><div class="stat-n">—</div><div class="stat-l">Website Clicks</div></div></div><p style="font-size:13px;color:var(--grey-dark);">Full lead tracking coming soon. Data will populate as users interact with your listing.</p></div></div>';}
+
+function bSettings(){document.getElementById('b-content').innerHTML='<div class="tbl-wrap" style="max-width:520px;"><div class="tbl-head"><h3>Account Settings</h3></div><div style="padding:24px;">' +
+  '<div class="form-group"><label class="label">Email (Login)</label><input type="email" class="inp" value="'+(CU?CU.email:'')+'" disabled style="background:var(--grey);"></div>' +
+  '<div style="margin-top:4px;"><button class="btn btn-white" onclick="auth.sendPasswordResetEmail(\''+(CU?CU.email:'')+'\').then(function(){toast(\'Reset email sent!\',\'ok\');})">🔑 Change Password via Email</button></div>' +
+  '<div style="background:#FFE5E3;border-radius:8px;padding:14px;margin-top:18px;"><h4 style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:5px;">Danger Zone</h4><p style="font-size:12px;color:var(--grey-dark);">To delete your listing, contact the directory admin.</p></div>' +
+  '</div></div>';}
+
+function bSupport(){document.getElementById('b-content').innerHTML='<div class="tbl-wrap" style="max-width:520px;"><div class="tbl-head"><h3>💬 Support</h3></div><div style="padding:24px;">' +
+  '<div class="form-group"><label class="label">Subject</label><input type="text" id="sp-sub" class="inp" placeholder="e.g. Update my address"></div>' +
+  '<div class="form-group"><label class="label">Message</label><textarea id="sp-msg" class="inp inp-ta" placeholder="Describe your issue…"></textarea></div>' +
+  '<button class="btn btn-red" onclick="bSubmitSupport()">Send Message</button>' +
+  '<div id="sp-ok" class="ok-box hidden" style="margin-top:10px;">✅ Sent! We\'ll respond within 24 hours.</div></div></div>';}
+function bSubmitSupport(){db.collection('support_tickets').add({bizId:activeBizId,userId:CU&&CU.uid,email:CU&&CU.email,subject:gv('sp-sub'),message:gv('sp-msg'),createdAt:firebase.firestore.FieldValue.serverTimestamp(),status:'open'}).then(function(){showEl('sp-ok','');toast('Support ticket submitted!','ok');});}
+
+function viewMyListing(){if(activeBizId)openDetail(activeBizId);}
+
+// ════════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════════
+function gv(id){var e=document.getElementById(id);return e?(e.value||'').trim():'';}
+function gv2(id){var e=document.getElementById(id);return e?e.value:'';}
+function setVal(id,v){var e=document.getElementById(id);if(e)e.value=v;}
+function setTxt(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+function showErr(id,msg){var e=document.getElementById(id);if(e){e.textContent=msg;e.classList.remove('hidden');}}
+function showEl(id,msg){var e=document.getElementById(id);if(e){if(msg!==undefined)e.textContent=msg;e.classList.remove('hidden');}}
+function hideEl(id){var e=document.getElementById(id);if(e)e.classList.add('hidden');}
+function openModal(id){document.getElementById(id)&&document.getElementById(id).classList.remove('hidden');}
+function closeModal(id){document.getElementById(id)&&document.getElementById(id).classList.add('hidden');}
+document.querySelectorAll('.modal-ov').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)o.classList.add('hidden');});});
+function confirm2(title,msg,cb){setTxt('cfm-title',title);setTxt('cfm-msg',msg);document.getElementById('cfm-btn').onclick=function(){closeModal('m-confirm');cb();};openModal('m-confirm');}
+function fmtDate(ts){if(!ts)return'—';try{var d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleDateString('en-CA',{year:'numeric',month:'short',day:'numeric'});}catch(e){return'—';}}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,t){var c=document.getElementById('toast-box'),el=document.createElement('div');el.className='toast '+(t==='ok'?'t-ok':t==='err'?'t-err':'t-inf');el.innerHTML=(t==='ok'?'✅':t==='err'?'❌':'ℹ️')+' '+escHtml(msg);c.appendChild(el);setTimeout(function(){el.remove();},4000);}
+
+// ════════════════════════════════════════════════
+// FIRESTORE INDEXES NOTE
+// ════════════════════════════════════════════════
+// If you see index errors in console, go to:
+// Firebase Console > Firestore > Indexes > Create composite index
+// Collection: reviews, Fields: bizId ASC, flagged ASC, createdAt DESC
+// Collection: businesses, Fields: approved ASC, industry ASC
+// Collection: listing_requests, Fields: status ASC, submittedAt DESC
+
+// INIT
+initHome();
+populateIndSelects();
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>
