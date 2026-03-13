@@ -6,9 +6,9 @@
 <title>Canada-Directory | Find Canadian Businesses</title>
 
 <!-- Firebase Compat SDK (works in any browser, no module needed) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -666,6 +666,7 @@ tbody tr:hover td{background:#FAFAF8;}
 </div>
 
 <script>
+window.addEventListener('DOMContentLoaded', function() {
 // ════════════════════════════════════════════════
 // FIREBASE CONFIG & INIT (Compat SDK)
 // ════════════════════════════════════════════════
@@ -681,8 +682,9 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
-const ADMIN_EMAIL  = 'Ads@maximamarketingagency.com';
-const PLACES_KEY   = 'AIzaSyCup-QVNvZKnAiFihai8sABnrBWr0IjIVk';
+// Admin role checked via Firestore only — no credentials in code
+const PLACES_KEY = 'AIzaSyCup-QVNvZKnAiFihai8sABnrBWr0IjIVk';
+let IS_ADMIN = false;
 
 // ════════════════════════════════════════════════
 // STATE
@@ -730,15 +732,19 @@ auth.onAuthStateChanged(async function(user) {
   CU = user;
   if (user) {
     try {
+      // Check role from Firestore — no email hardcoded
+      var roleSnap = await db.collection('users').where('email','==',user.email).where('role','==','superadmin').limit(1).get();
+      IS_ADMIN = !roleSnap.empty;
       const snap = await db.collection('users').doc(user.uid).get();
       CUD = snap.exists ? snap.data() : null;
       if (!snap.exists) await saveUserDoc(user);
-    } catch(e) { CUD = null; }
+    } catch(e) { CUD = null; IS_ADMIN = false; }
     renderNavUser(user);
     var dest = sessionStorage.getItem('dest');
     if (dest) { sessionStorage.removeItem('dest'); showPage(dest); }
   } else {
     CUD = null;
+    IS_ADMIN = false;
     renderNavGuest();
   }
 });
@@ -757,7 +763,7 @@ async function saveUserDoc(user, name) {
 
 function renderNavUser(user) {
   var init = ((user.displayName || user.email || 'U')[0]).toUpperCase();
-  var isAdmin = user.email === ADMIN_EMAIL;
+  var isAdmin = IS_ADMIN;
   document.getElementById('nav-acts').innerHTML =
     '<button class="btn btn-outline btn-sm" onclick="openModal(\'m-listbiz\')">+ List Your Business</button>' +
     '<div class="u-menu"><div class="avatar" onclick="toggleUD()" style="font-size:14px;">'+init+'</div>' +
@@ -826,7 +832,7 @@ function doLogout() {
 }
 
 function routeAfterLogin(user) {
-  if (user.email === ADMIN_EMAIL) showPage('admin');
+  if (IS_ADMIN) showPage('admin');
   else showPage('bizportal');
 }
 
@@ -848,7 +854,7 @@ function showPage(p) {
   window.scrollTo(0,0);
   if (p==='home')     initHome();
   if (p==='browse')   initBrowse();
-  if (p==='admin')    { if(!CU||CU.email!==ADMIN_EMAIL){sessionStorage.setItem('dest','admin');showPage('login');return;} initAdmin(); }
+  if (p==='admin')    { if(!CU||!IS_ADMIN){sessionStorage.setItem('dest','admin');showPage('login');return;} initAdmin(); }
   if (p==='bizportal'){ if(!CU){sessionStorage.setItem('dest','bizportal');showPage('login');return;} initBizPortal(); }
 }
 
@@ -997,7 +1003,7 @@ function openDetail(bizId) {
       '<span class="stars" style="font-size:15px;">'+starsHTML(avg)+'</span>'+
       '<span style="color:rgba(255,255,255,.55);font-size:13px;">'+avg.toFixed(1)+' ('+(b.reviewCount||0)+' reviews)</span>'+
       '<span style="color:rgba(255,255,255,.35);font-size:12px;">✓ Verified</span>';
-    var isAdmin=CU&&CU.email===ADMIN_EMAIL;
+    var isAdmin=CU&&IS_ADMIN;
     document.getElementById('det-acts').innerHTML=
       (isAdmin?'<button class="btn btn-white btn-sm" onclick="showPage(\'admin\')">⚙️ Manage</button>':'')+
       '<button class="btn btn-red btn-sm" onclick="openReviewModal(\''+bizId+'\',\''+escHtml(b.name||'')+'\')">⭐ Write Review</button>';
@@ -1024,7 +1030,7 @@ function loadDetailReviews(bizId) {
     .get().then(function(snap) {
       if (snap.empty) { list.innerHTML='<p style="color:var(--grey-dark);padding:10px 0;">No reviews yet. Be the first!</p>'; }
       else {
-        var isAdmin=CU&&CU.email===ADMIN_EMAIL;
+        var isAdmin=CU&&IS_ADMIN;
         list.innerHTML=snap.docs.map(function(d){
           var r=Object.assign({id:d.id},d.data());
           return '<div class="rev-card">' +
@@ -1435,9 +1441,9 @@ function aIndustries(){
 
 function aSettings(){
   document.getElementById('a-content').innerHTML='<div class="tbl-wrap" style="max-width:580px;"><div class="tbl-head"><h3>System Settings</h3></div><div style="padding:24px;">' +
-    '<div style="background:var(--grey);border-radius:10px;padding:18px;margin-bottom:14px;"><h4 style="font-size:14px;font-weight:700;margin-bottom:4px;">Admin Account</h4><p style="font-size:13px;color:var(--grey-dark);">Email: '+ADMIN_EMAIL+'</p><p style="font-size:13px;color:var(--grey-dark);margin-top:3px;">To change password use the Forgot Password flow or Firebase Console.</p></div>' +
+    '<div style="background:var(--grey);border-radius:10px;padding:18px;margin-bottom:14px;"><h4 style="font-size:14px;font-weight:700;margin-bottom:4px;">Admin Account</h4><p style="font-size:13px;color:var(--grey-dark);">To change password use the Forgot Password flow or Firebase Console.</p></div>' +
     '<div style="background:var(--grey);border-radius:10px;padding:18px;margin-bottom:14px;"><h4 style="font-size:14px;font-weight:700;margin-bottom:4px;">Firebase Project</h4><p style="font-size:13px;color:var(--grey-dark);">Project: canada-directory-79392 · Region: Montreal</p><p style="font-size:13px;color:var(--grey-dark);margin-top:3px;"><a href="https://console.firebase.google.com/project/canada-directory-79392" target="_blank" style="color:var(--red);">Open Firebase Console →</a></p></div>' +
-    '<div style="background:#FFE5E3;border-radius:10px;padding:18px;"><h4 style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:4px;">🔐 Emergency Access</h4><p style="font-size:13px;color:var(--grey-dark);">If locked out, go to Firebase Console → Authentication → reset password for '+ADMIN_EMAIL+'</p></div>' +
+    '<div style="background:#FFE5E3;border-radius:10px;padding:18px;"><h4 style="font-size:14px;font-weight:700;color:var(--red);margin-bottom:4px;">🔐 Emergency Access</h4><p style="font-size:13px;color:var(--grey-dark);">If locked out, go to Firebase Console → Authentication → Users to reset your password.</p></div>' +
     '</div></div>';
 }
 
@@ -1563,7 +1569,7 @@ function bLeads(){document.getElementById('b-content').innerHTML='<div class="tb
 function bSettings(){document.getElementById('b-content').innerHTML='<div class="tbl-wrap" style="max-width:520px;"><div class="tbl-head"><h3>Account Settings</h3></div><div style="padding:24px;">' +
   '<div class="form-group"><label class="label">Email (Login)</label><input type="email" class="inp" value="'+(CU?CU.email:'')+'" disabled style="background:var(--grey);"></div>' +
   '<div style="margin-top:4px;"><button class="btn btn-white" onclick="auth.sendPasswordResetEmail(\''+(CU?CU.email:'')+'\').then(function(){toast(\'Reset email sent!\',\'ok\');})">🔑 Change Password via Email</button></div>' +
-  '<div style="background:#FFE5E3;border-radius:8px;padding:14px;margin-top:18px;"><h4 style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:5px;">Danger Zone</h4><p style="font-size:12px;color:var(--grey-dark);">To delete your listing, contact admin at '+ADMIN_EMAIL+'</p></div>' +
+  '<div style="background:#FFE5E3;border-radius:8px;padding:14px;margin-top:18px;"><h4 style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:5px;">Danger Zone</h4><p style="font-size:12px;color:var(--grey-dark);">To delete your listing, contact the directory admin.</p></div>' +
   '</div></div>';}
 
 function bSupport(){document.getElementById('b-content').innerHTML='<div class="tbl-wrap" style="max-width:520px;"><div class="tbl-head"><h3>💬 Support</h3></div><div style="padding:24px;">' +
@@ -1605,6 +1611,7 @@ function toast(msg,t){var c=document.getElementById('toast-box'),el=document.cre
 // INIT
 initHome();
 populateIndSelects();
+}); // end DOMContentLoaded
 </script>
 </body>
 </html>
