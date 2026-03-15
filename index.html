@@ -361,6 +361,7 @@ tbody tr:hover td{background:#FAFAF8;}
     <div class="nav-links">
       <button class="nav-lnk" onclick="showPage('home')">Home</button>
       <button class="nav-lnk" onclick="showPage('browse')">Browse</button>
+      <button class="nav-lnk" onclick="showPage('voice')">Community</button>
       <button class="nav-lnk" onclick="showPage('home');setTimeout(()=>document.getElementById('hiw').scrollIntoView({behavior:'smooth'}),200)">How It Works</button>
     </div>
     <div class="nav-acts" id="nav-acts">
@@ -378,6 +379,7 @@ tbody tr:hover td{background:#FAFAF8;}
     <div class="mob-nav-hdr"><h3>🍁 Canada-Directory</h3></div>
     <a onclick="showPage('home');closeMobNav()">Home</a>
     <a onclick="showPage('browse');closeMobNav()">Browse</a>
+    <a onclick="showPage('voice');closeMobNav()">💬 Community</a>
     <a onclick="showPage('home');closeMobNav();setTimeout(()=>document.getElementById('hiw').scrollIntoView({behavior:'smooth'}),300)">How It Works</a>
     <div class="mob-sep"></div>
     <a onclick="openModal('m-listbiz');closeMobNav()">+ List Your Business</a>
@@ -509,16 +511,29 @@ tbody tr:hover td{background:#FAFAF8;}
         <div id="det-revs"></div>
         <div id="det-rev-cta"></div>
       </div>
-      <div class="det-sec">
-        <h3>💬 People's Voice</h3>
-        <p style="font-size:13px;color:var(--grey-dark);margin-bottom:14px;">Community discussions — raise a concern, share an experience, or ask a question about this business.</p>
+      <div class="det-sec" id="det-voice-section" style="display:none;">
+        <h3>💬 Community Discussions</h3>
         <div id="det-voice"></div>
-        <div id="det-voice-cta" style="margin-top:10px;"></div>
       </div>
     </div>
     <div>
       <div class="info-card" id="det-info"></div>
     </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PEOPLE'S VOICE PAGE ═══════════════════ -->
+<div id="page-voice" class="page">
+  <div class="det-hero" style="background:linear-gradient(135deg,#0A0A0A 0%,#1a0606 50%,#C02216 100%);">
+    <div class="det-hero-in">
+      <div style="font-size:42px;margin-bottom:12px;">💬</div>
+      <h1 style="font-family:'Fraunces',serif;font-size:clamp(28px,4vw,46px);font-weight:900;color:#fff;margin-bottom:10px;">People's Voice</h1>
+      <p style="color:rgba(255,255,255,.65);font-size:15px;max-width:520px;line-height:1.7;margin-bottom:20px;">Community discussions about Canadian businesses — raise a concern, share an experience, or start a conversation.</p>
+      <button class="btn btn-red" onclick="openNewVoiceThreadGlobal()">+ Start a Conversation</button>
+    </div>
+  </div>
+  <div class="sec" style="max-width:800px;">
+    <div id="voice-page-feed"><div class="load-c"><div class="spin"></div><span>Loading discussions…</span></div></div>
   </div>
 </div>
 
@@ -1114,17 +1129,21 @@ function resendVerifyLink() {
 // PEOPLE'S VOICE — community threads per business
 // Collections: voice_threads, voice_comments
 // ════════════════════════════════════════════════
-var _voiceBizId=null, _voiceThreadId=null;
+var _voiceBizId=null, _voiceThreadId=null, _voiceBizName=null;
 
-function loadVoiceThreads(bizId){
+function loadVoiceThreads(bizId, bizName){
   _voiceBizId=bizId;
-  var ct=document.getElementById('det-voice'), ca=document.getElementById('det-voice-cta');
+  _voiceBizName=bizName||null;
+  var ct=document.getElementById('det-voice'), sec=document.getElementById('det-voice-section');
   if(!ct)return;
   ct.innerHTML='<div class="load-c"><div class="spin"></div></div>';
   db.collection('voice_threads').where('bizId','==',bizId).orderBy('createdAt','desc').limit(20).get().then(function(snap){
     if(snap.empty){
-      ct.innerHTML='<p style="color:var(--grey-dark);font-size:14px;padding:8px 0;">No threads yet — be the first to start a discussion!</p>';
+      // No threads — hide the section entirely
+      ct.innerHTML='';
+      if(sec)sec.style.display='none';
     } else {
+      if(sec)sec.style.display='';
       ct.innerHTML=snap.docs.map(function(d){
         var t=Object.assign({id:d.id},d.data());
         return '<div class="rev-card" style="cursor:pointer;" onclick="openVoiceThread(\''+t.id+'\')">'+
@@ -1142,20 +1161,19 @@ function loadVoiceThreads(bizId){
           '</div>';
       }).join('');
     }
-    if(ca){
-      if(!CU){
-        ca.innerHTML='<p style="font-size:13px;color:var(--grey-dark);"><a onclick="showPage(\'login\')" style="color:var(--red);font-weight:700;cursor:pointer;">Sign in</a> to start a thread.</p>';
-      } else if(!CU.emailVerified){
-        ca.innerHTML='<p style="font-size:13px;color:#7A5900;background:#FFF8E7;padding:10px 12px;border-radius:8px;">⚠️ Verify your email to post in People\'s Voice.</p>';
-      } else {
-        ca.innerHTML='<button class="btn btn-outline btn-sm" onclick="openNewVoiceThread()">+ Start a Thread</button>';
-      }
-    }
-  }).catch(function(){if(ct)ct.innerHTML='<p style="color:var(--grey-dark);font-size:13px;">Could not load threads.</p>';});
+  }).catch(function(){if(ct)ct.innerHTML='';if(sec)sec.style.display='none';});
 }
 
 function openNewVoiceThread(){
   if(!CU||!CU.emailVerified){toast('Please sign in and verify your email first.','err');return;}
+  setVal('vt-title','');setVal('vt-body','');hideEl('vt-err');
+  openModal('m-voice-new');
+}
+
+function openNewVoiceThreadGlobal(){
+  if(!CU){toast('Please sign in to start a conversation.','err');showPage('login');return;}
+  if(!CU.emailVerified){toast('Please verify your email first.','err');return;}
+  _voiceBizId=null;_voiceBizName=null;
   setVal('vt-title','');setVal('vt-body','');hideEl('vt-err');
   openModal('m-voice-new');
 }
@@ -1166,15 +1184,18 @@ function submitVoiceThread(){
   if(!title||title.length<5){showErr('vt-err','Please enter a title (at least 5 characters).');return;}
   if(!body||body.length<10){showErr('vt-err','Please write at least 10 characters.');return;}
   hideEl('vt-err');
-  db.collection('voice_threads').add({
-    bizId:_voiceBizId,title:title,body:body,
+  var data={
+    bizId:_voiceBizId||null,bizName:_voiceBizName||null,
+    title:title,body:body,
     authorUid:CU.uid,authorName:CU.displayName||CU.email.split('@')[0],
     createdAt:firebase.firestore.FieldValue.serverTimestamp(),
     upvotes:0,upvotedBy:[],commentCount:0
-  }).then(function(){
+  };
+  db.collection('voice_threads').add(data).then(function(){
     closeModal('m-voice-new');
     toast('Thread posted! 🍁','ok');
-    loadVoiceThreads(_voiceBizId);
+    if(_voiceBizId){loadVoiceThreads(_voiceBizId,_voiceBizName);}
+    else{initVoicePage();}
   }).catch(function(e){showErr('vt-err',e.message);});
 }
 
@@ -1284,6 +1305,40 @@ function shareVoiceThread(threadId,title){
   }
 }
 
+// ════════════════════════════════════════════════
+// PEOPLE'S VOICE — dedicated community page
+// ════════════════════════════════════════════════
+function initVoicePage(){
+  var feed=document.getElementById('voice-page-feed');
+  if(!feed)return;
+  feed.innerHTML='<div class="load-c"><div class="spin"></div><span>Loading…</span></div>';
+  db.collection('voice_threads').orderBy('createdAt','desc').limit(40).get().then(function(snap){
+    if(snap.empty){
+      feed.innerHTML='<div style="text-align:center;padding:60px 20px;"><div style="font-size:48px;margin-bottom:16px;">💬</div><h3 style="font-family:\'Fraunces\',serif;font-size:22px;margin-bottom:8px;">No discussions yet</h3><p style="color:var(--grey-dark);">Be the first to start a conversation!</p></div>';
+      return;
+    }
+    feed.innerHTML=snap.docs.map(function(d){
+      var t=Object.assign({id:d.id},d.data());
+      return '<div class="rev-card" style="cursor:pointer;margin-bottom:14px;" onclick="openVoiceThread(\''+t.id+'\')">'+
+        '<div class="rev-hdr">'+
+        '<div class="avatar" style="width:36px;height:36px;font-size:14px;">'+(t.authorName||'U')[0]+'</div>'+
+        '<div style="flex:1;min-width:0;">'+
+        '<div style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escHtml(t.title||'')+'</div>'+
+        '<div style="font-size:12px;color:var(--grey-dark);">'+
+        (t.bizName?'<span style="color:var(--red);font-weight:600;">'+escHtml(t.bizName)+'</span> · ':'')+
+        'by '+escHtml(t.authorName||'Anonymous')+' · '+fmtDate(t.createdAt)+
+        '</div>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--grey-dark);flex-shrink:0;">'+
+        '<span title="Helpful votes">👍 '+(t.upvotes||0)+'</span>'+
+        '<span title="Comments">💬 '+(t.commentCount||0)+'</span>'+
+        '</div></div>'+
+        '<p style="font-size:13px;color:var(--grey-dark);margin-top:6px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">'+escHtml((t.body||'').substring(0,200))+'</p>'+
+        '</div>';
+    }).join('');
+  }).catch(function(){feed.innerHTML='<p style="color:var(--grey-dark);text-align:center;padding:40px;">Could not load discussions.</p>';});
+}
+
 function doForgot() {
   var em = gv('fp-em');
   if (!em) { showErr('fp-err','Enter your email address.'); return; }
@@ -1318,6 +1373,7 @@ function showPage(p) {
   location.hash = p;
   if (p==='home')     initHome();
   if (p==='browse')   initBrowse();
+  if (p==='voice')    initVoicePage();
   if (p==='admin')    { if(!CU||!IS_ADMIN){sessionStorage.setItem('dest','admin');showPage('login');return;} initAdmin(); }
   if (p==='bizportal'){ if(!CU){sessionStorage.setItem('dest','bizportal');showPage('login');return;} initBizPortal(); }
 }
@@ -1515,7 +1571,7 @@ function openDetail(bizId) {
       '<div class="irow"><span class="ico">🍁</span><div><div class="ilbl">Province</div>'+(b.province||'')+'</div></div>'+
       '<button class="btn btn-red w100" style="margin-top:14px;" onclick="openReviewModal(\''+bizId+'\',\'\')">⭐ Write Review</button>';
     loadDetailReviews(bizId);
-    loadVoiceThreads(bizId);
+    loadVoiceThreads(bizId, b.name);
   }).catch(function(e){ toast(e.message,'err'); });
 }
 
