@@ -271,21 +271,78 @@ tbody tr:hover td{background:#FAFAF8;}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .gc2{grid-column:1/-1;}
 
+/* ── HAMBURGER ── */
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;flex-direction:column;gap:4px;justify-content:center;}
+.hamburger span{display:block;width:22px;height:2px;background:var(--black);border-radius:2px;transition:all .2s;}
+.mob-nav-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;opacity:0;visibility:hidden;transition:all .25s;}
+.mob-nav-ov.open{opacity:1;visibility:visible;}
+.mob-nav{position:fixed;top:0;right:0;width:280px;max-width:85vw;height:100%;background:#fff;z-index:901;transform:translateX(100%);transition:transform .28s ease;overflow-y:auto;padding:20px 0;}
+.mob-nav-ov.open .mob-nav{transform:translateX(0);}
+.mob-nav-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border:none;background:var(--grey);border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--grey-dark);}
+.mob-nav-hdr{padding:0 20px 16px;border-bottom:1px solid #EDEAE5;margin-bottom:8px;}
+.mob-nav-hdr h3{font-family:'Fraunces',serif;font-size:17px;}
+.mob-nav a,.mob-nav button.mob-nav-lnk{display:flex;align-items:center;gap:10px;padding:11px 20px;font-size:14px;font-weight:500;color:var(--black);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;width:100%;text-align:left;text-decoration:none;}
+.mob-nav a:hover{background:var(--grey);}
+.mob-nav .mob-sep{height:1px;background:#EDEAE5;margin:8px 0;}
+.sb-toggle{display:none;background:none;border:none;cursor:pointer;font-size:22px;padding:4px 8px;}
+.sb-ov{display:none;}
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+
 /* ── RESPONSIVE ── */
 @media(max-width:860px){
   .nav-links{display:none;}
   .nav-inner{padding:0 16px;}
+  .hamburger{display:flex;}
   .hero{padding:52px 18px 48px;}
   .search-wrap{flex-wrap:wrap;}
+  .search-wrap input{min-width:0;}
+  .search-wrap select{width:100%;}
   .sec{padding:48px 18px;}
   .sec-bg .sec-inner{padding:48px 18px;}
   .det-body{grid-template-columns:1fr;}
+  .det-hero{padding:32px 18px;}
+  .info-card{position:static;}
   .stats-row{grid-template-columns:1fr 1fr;}
   .charts-grid{grid-template-columns:1fr;}
-  .sidebar{display:none;}
-  .p-content{padding:18px;}
+  .sidebar{position:fixed;top:0;left:0;width:270px;height:100%;z-index:800;transform:translateX(-100%);transition:transform .28s ease;display:flex;}
+  .sidebar.sb-open{transform:translateX(0);}
+  .sb-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:799;}
+  .sb-ov.open{display:block;}
+  .sb-toggle{display:block;}
+  .portal-wrap{flex-direction:column;}
+  .portal-main{min-height:auto;}
+  .p-topbar{padding:12px 16px;}
+  .p-topbar h2{font-size:16px;}
+  .p-content{padding:14px;}
   .biz-grid{grid-template-columns:1fr;}
   .g2{grid-template-columns:1fr;}
+  .filters{padding:10px 14px;top:62px;}
+  .filters-inner{gap:6px;}
+  .fpill{padding:6px 10px;font-size:12px;}
+  .nav-acts .btn-outline.btn-sm{display:none;}
+  .footer-grid{grid-template-columns:1fr 1fr!important;gap:24px!important;}
+  table{min-width:600px;}
+  .tbl-wrap{border-radius:var(--r);}
+  .modal{padding:24px 18px;margin:10px;max-height:95vh;}
+  .modal h2{font-size:19px;}
+  .ind-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;}
+  .ind-tile{padding:14px 8px;}
+  .t-icon{font-size:24px;}
+  .t-name{font-size:11px;}
+}
+@media(max-width:480px){
+  .hero h1{font-size:28px;}
+  .hero p{font-size:14px;}
+  .hero-stats{gap:20px;}
+  .hero-stat strong{font-size:22px;}
+  .search-btn{width:100%;justify-content:center;}
+  .stats-row{grid-template-columns:1fr;}
+  .stat-n{font-size:28px;}
+  .auth-box{padding:28px 20px;}
+  .auth-title{font-size:20px;}
+  .btn-lg{padding:13px 22px;font-size:14px;}
+  .sec-title{font-size:22px;}
+  .footer-grid{grid-template-columns:1fr!important;}
 }
 </style>
 </head>
@@ -309,8 +366,30 @@ tbody tr:hover td{background:#FAFAF8;}
       <button class="btn btn-outline btn-sm" onclick="openModal('m-listbiz')">+ List Your Business</button>
       <button class="btn btn-dark btn-sm" onclick="showPage('login')">Sign In</button>
     </div>
+    <button class="hamburger" onclick="openMobNav()" aria-label="Menu"><span></span><span></span><span></span></button>
   </div>
 </nav>
+
+<!-- Mobile Nav Drawer -->
+<div class="mob-nav-ov" id="mob-nav-ov" onclick="closeMobNav()">
+  <div class="mob-nav" onclick="event.stopPropagation()">
+    <button class="mob-nav-close" onclick="closeMobNav()">✕</button>
+    <div class="mob-nav-hdr"><h3>🍁 Canada-Directory</h3></div>
+    <a onclick="showPage('home');closeMobNav()">Home</a>
+    <a onclick="showPage('browse');closeMobNav()">Browse</a>
+    <a onclick="showPage('home');closeMobNav();setTimeout(()=>document.getElementById('hiw').scrollIntoView({behavior:'smooth'}),300)">How It Works</a>
+    <div class="mob-sep"></div>
+    <a onclick="openModal('m-listbiz');closeMobNav()">+ List Your Business</a>
+    <div class="mob-sep"></div>
+    <div id="mob-nav-auth">
+      <a onclick="showPage('login');closeMobNav()">Sign In</a>
+      <a onclick="showPage('signup');closeMobNav()">Create Account</a>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar Overlay (mobile) -->
+<div class="sb-ov" id="sb-ov" onclick="closeSidebar()"></div>
 
 <!-- ═══════════════════ HOME ═══════════════════ -->
 <div id="page-home" class="page active">
@@ -526,7 +605,10 @@ tbody tr:hover td{background:#FAFAF8;}
     </div>
     <div class="portal-main">
       <div class="p-topbar">
-        <h2 id="a-title">Dashboard</h2>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="sb-toggle" onclick="toggleSidebar()">☰</button>
+          <h2 id="a-title">Dashboard</h2>
+        </div>
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="font-size:12px;color:var(--grey-dark);" id="a-time"></span>
           <div class="avatar" style="background:var(--black);font-size:13px;">SA</div>
@@ -560,7 +642,10 @@ tbody tr:hover td{background:#FAFAF8;}
     </div>
     <div class="portal-main">
       <div class="p-topbar">
-        <h2 id="b-title">Overview</h2>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="sb-toggle" onclick="toggleSidebar()">☰</button>
+          <h2 id="b-title">Overview</h2>
+        </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <button class="btn btn-outline btn-sm" onclick="viewMyListing()">View Public Listing →</button>
           <div class="avatar" id="b-av">B</div>
@@ -574,7 +659,7 @@ tbody tr:hover td{background:#FAFAF8;}
 <!-- ═══════════════════ FOOTER ═══════════════════ -->
 <footer id="main-footer" style="background:var(--black);color:rgba(255,255,255,.45);padding:48px 28px 24px;">
   <div style="max-width:1280px;margin:0 auto;">
-    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px;">
+    <div class="footer-grid" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px;">
       <div><div style="font-size:30px;margin-bottom:8px;">🍁</div><h3 style="font-family:'Fraunces',serif;color:#fff;font-size:20px;margin-bottom:8px;">Canada-Directory</h3><p style="font-size:13px;line-height:1.7;max-width:240px;">Canada's most trusted business directory. Connecting Canadians with verified local businesses coast to coast.</p></div>
       <div><h4 style="color:#fff;font-size:13px;font-weight:700;margin-bottom:12px;">Directory</h4>
         <a onclick="showPage('home')" style="display:block;color:rgba(255,255,255,.38);font-size:13px;margin-bottom:7px;cursor:pointer;">Home</a>
@@ -934,21 +1019,85 @@ tbody tr:hover td{background:#FAFAF8;}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .gc2{grid-column:1/-1;}
 
+/* ── HAMBURGER ── */
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;flex-direction:column;gap:4px;justify-content:center;}
+.hamburger span{display:block;width:22px;height:2px;background:var(--black);border-radius:2px;transition:all .2s;}
+
+/* ── MOBILE NAV DRAWER ── */
+.mob-nav-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;opacity:0;visibility:hidden;transition:all .25s;}
+.mob-nav-ov.open{opacity:1;visibility:visible;}
+.mob-nav{position:fixed;top:0;right:0;width:280px;max-width:85vw;height:100%;background:#fff;z-index:901;transform:translateX(100%);transition:transform .28s ease;overflow-y:auto;padding:20px 0;}
+.mob-nav-ov.open .mob-nav{transform:translateX(0);}
+.mob-nav-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border:none;background:var(--grey);border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--grey-dark);}
+.mob-nav-close:hover{background:var(--red);color:#fff;}
+.mob-nav-hdr{padding:0 20px 16px;border-bottom:1px solid #EDEAE5;margin-bottom:8px;}
+.mob-nav-hdr h3{font-family:'Fraunces',serif;font-size:17px;}
+.mob-nav a,.mob-nav button.mob-nav-lnk{display:flex;align-items:center;gap:10px;padding:11px 20px;font-size:14px;font-weight:500;color:var(--black);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;width:100%;text-align:left;text-decoration:none;transition:background .14s;}
+.mob-nav a:hover,.mob-nav button.mob-nav-lnk:hover{background:var(--grey);}
+.mob-nav .mob-sep{height:1px;background:#EDEAE5;margin:8px 0;}
+
+/* ── MOBILE SIDEBAR TOGGLE ── */
+.sb-toggle{display:none;background:none;border:none;cursor:pointer;font-size:22px;padding:4px 8px;}
+
+/* ── SIDEBAR MOBILE OVERLAY ── */
+.sb-ov{display:none;}
+
+/* ── TABLE SCROLL ── */
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+
 /* ── RESPONSIVE ── */
 @media(max-width:860px){
   .nav-links{display:none;}
   .nav-inner{padding:0 16px;}
+  .hamburger{display:flex;}
   .hero{padding:52px 18px 48px;}
   .search-wrap{flex-wrap:wrap;}
+  .search-wrap input{min-width:0;}
+  .search-wrap select{width:100%;}
   .sec{padding:48px 18px;}
   .sec-bg .sec-inner{padding:48px 18px;}
   .det-body{grid-template-columns:1fr;}
+  .det-hero{padding:32px 18px;}
+  .info-card{position:static;}
   .stats-row{grid-template-columns:1fr 1fr;}
   .charts-grid{grid-template-columns:1fr;}
-  .sidebar{display:none;}
-  .p-content{padding:18px;}
+  .sidebar{position:fixed;top:0;left:0;width:270px;height:100%;z-index:800;transform:translateX(-100%);transition:transform .28s ease;display:flex;}
+  .sidebar.sb-open{transform:translateX(0);}
+  .sb-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:799;}
+  .sb-ov.open{display:block;}
+  .sb-toggle{display:block;}
+  .portal-wrap{flex-direction:column;}
+  .portal-main{min-height:auto;}
+  .p-topbar{padding:12px 16px;}
+  .p-topbar h2{font-size:16px;}
+  .p-content{padding:14px;}
   .biz-grid{grid-template-columns:1fr;}
   .g2{grid-template-columns:1fr;}
+  .filters{padding:10px 14px;top:62px;}
+  .filters-inner{gap:6px;}
+  .fpill{padding:6px 10px;font-size:12px;}
+  .nav-acts .btn-outline.btn-sm{display:none;}
+  .tbl-wrap{border-radius:var(--r);}
+  table{min-width:600px;}
+  .modal{padding:24px 18px;margin:10px;max-height:95vh;}
+  .modal h2{font-size:19px;}
+  .ind-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;}
+  .ind-tile{padding:14px 8px;}
+  .t-icon{font-size:24px;}
+  .t-name{font-size:11px;}
+}
+@media(max-width:480px){
+  .hero h1{font-size:28px;}
+  .hero p{font-size:14px;}
+  .hero-stats{gap:20px;}
+  .hero-stat strong{font-size:22px;}
+  .search-btn{width:100%;justify-content:center;}
+  .stats-row{grid-template-columns:1fr;}
+  .stat-n{font-size:28px;}
+  .auth-box{padding:28px 20px;}
+  .auth-title{font-size:20px;}
+  .btn-lg{padding:13px 22px;font-size:14px;}
+  .sec-title{font-size:22px;}
 }
 </style>
 </head>
@@ -992,6 +1141,57 @@ let adminTab_cur = 'dashboard';
 let bizTab_cur   = 'overview';
 let browseInd    = '';
 let selectedGP   = [];
+
+// ════════════════════════════════════════════════
+// MOBILE NAV
+// ════════════════════════════════════════════════
+function openMobNav() {
+  document.getElementById('mob-nav-ov').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeMobNav() {
+  document.getElementById('mob-nav-ov').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function toggleSidebar() {
+  var sb = document.querySelector('.page.active .sidebar');
+  var ov = document.getElementById('sb-ov');
+  if (!sb) return;
+  sb.classList.toggle('sb-open');
+  if (sb.classList.contains('sb-open')) {
+    ov.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  } else {
+    ov.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+function closeSidebar() {
+  var sbs = document.querySelectorAll('.sidebar');
+  sbs.forEach(function(sb) { sb.classList.remove('sb-open'); });
+  var ov = document.getElementById('sb-ov');
+  if (ov) ov.classList.remove('open');
+  document.body.style.overflow = '';
+}
+// Auto-close sidebar when a sidebar link is tapped on mobile
+document.addEventListener('click', function(e) {
+  if (e.target.closest('.sb-lnk') && window.innerWidth <= 860) {
+    setTimeout(closeSidebar, 150);
+  }
+});
+// Wrap tables for horizontal scroll on mobile
+function wrapTables() {
+  document.querySelectorAll('.tbl-wrap table').forEach(function(tbl) {
+    if (!tbl.parentElement.classList.contains('tbl-scroll')) {
+      var wrapper = document.createElement('div');
+      wrapper.className = 'tbl-scroll';
+      tbl.parentElement.insertBefore(wrapper, tbl);
+      wrapper.appendChild(tbl);
+    }
+  });
+}
+var _mobWrapObs = new MutationObserver(function() { wrapTables(); });
+_mobWrapObs.observe(document.body, {childList: true, subtree: true});
 
 const INDUSTRIES = [
   {id:'restaurants',name:'Restaurants & Food',icon:'🍽️'},
@@ -1084,11 +1284,24 @@ function renderNavUser(user) {
     '<div style="font-size:11px;color:var(--grey-dark);">'+user.email+'</div></div>' +
     (isAdmin ? '<a onclick="showPage(\'admin\');toggleUD()">🔐 Super Admin Portal</a>' : '<a onclick="showPage(\'bizportal\');toggleUD()">🏢 Business Portal</a>') +
     '<div class="sep"></div><a onclick="doLogout()">🚪 Sign Out</a></div></div>';
+  var mobAuth = document.getElementById('mob-nav-auth');
+  if (mobAuth) {
+    mobAuth.innerHTML =
+      '<div style="padding:4px 20px;font-size:12px;color:var(--grey-dark);">'+(user.displayName||user.email)+'</div>' +
+      (isAdmin ? '<a onclick="showPage(\'admin\');closeMobNav()">🔐 Super Admin Portal</a>' : '<a onclick="showPage(\'bizportal\');closeMobNav()">🏢 Business Portal</a>') +
+      '<a onclick="doLogout();closeMobNav()">🚪 Sign Out</a>';
+  }
 }
 function renderNavGuest() {
   document.getElementById('nav-acts').innerHTML =
     '<button class="btn btn-outline btn-sm" onclick="openModal(\'m-listbiz\')">+ List Your Business</button>' +
     '<button class="btn btn-dark btn-sm" onclick="showPage(\'login\')">Sign In</button>';
+  var mobAuth = document.getElementById('mob-nav-auth');
+  if (mobAuth) {
+    mobAuth.innerHTML =
+      '<a onclick="showPage(\'login\');closeMobNav()">Sign In</a>' +
+      '<a onclick="showPage(\'signup\');closeMobNav()">Create Account</a>';
+  }
 }
 function toggleUD() { var d=document.getElementById('u-drop'); if(d) d.classList.toggle('hidden'); }
 document.addEventListener('click', function(e){ if(!e.target.closest('.u-menu')){ var d=document.getElementById('u-drop'); if(d) d.classList.add('hidden'); } });
