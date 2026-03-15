@@ -1128,10 +1128,21 @@ function filterByIndustry(id) { browseInd=id; showPage('browse'); }
 
 function initBrowse() {
   populateIndSelects();
-  var sq = document.getElementById('f-q');
-  if (sq && !sq._userTyped) sq.value = '';
+  _clearSearchAutofill();
   if (browseInd) { var el=document.getElementById('f-ind'); if(el) el.value=browseInd; }
   applyFilters();
+}
+function _clearSearchAutofill() {
+  var sq = document.getElementById('f-q');
+  if (sq && !sq._userTyped) { sq.value = ''; }
+  setTimeout(function() {
+    var sq = document.getElementById('f-q');
+    if (sq && !sq._userTyped && sq.value) { sq.value = ''; applyFilters(); }
+  }, 100);
+  setTimeout(function() {
+    var sq = document.getElementById('f-q');
+    if (sq && !sq._userTyped && sq.value) { sq.value = ''; applyFilters(); }
+  }, 500);
 }
 
 function applyFilters() {
