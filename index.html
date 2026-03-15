@@ -455,7 +455,7 @@ tbody tr:hover td{background:#FAFAF8;}
 <div id="page-browse" class="page">
   <div class="filters">
     <div class="filters-inner">
-      <div class="fpill"><span>🔍</span><input type="search" id="f-q" name="directory-search" placeholder="Search…" oninput="this._userTyped=true;applyFilters()" autocomplete="off" role="searchbox" style="min-width:130px;"></div>
+      <div class="fpill" id="f-q-wrap"><span>🔍</span></div>
       <div class="fpill"><span>🏭</span>
         <select id="f-ind" onchange="applyFilters()" style="border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;background:transparent;cursor:pointer;">
           <option value="">All Industries</option>
@@ -1128,21 +1128,20 @@ function filterByIndustry(id) { browseInd=id; showPage('browse'); }
 
 function initBrowse() {
   populateIndSelects();
-  _clearSearchAutofill();
+  var wrap = document.getElementById('f-q-wrap');
+  var old = document.getElementById('f-q');
+  if (old) old.remove();
+  var inp = document.createElement('input');
+  inp.type = 'search';
+  inp.id = 'f-q';
+  inp.placeholder = 'Search\u2026';
+  inp.autocomplete = 'off';
+  inp.setAttribute('autocomplete', 'off');
+  inp.style.cssText = 'min-width:130px;border:none;outline:none;font-family:DM Sans,sans-serif;font-size:13px;font-weight:500;background:transparent;cursor:pointer;padding:0;';
+  inp.addEventListener('input', function() { applyFilters(); });
+  if (wrap) wrap.appendChild(inp);
   if (browseInd) { var el=document.getElementById('f-ind'); if(el) el.value=browseInd; }
   applyFilters();
-}
-function _clearSearchAutofill() {
-  var sq = document.getElementById('f-q');
-  if (sq && !sq._userTyped) { sq.value = ''; }
-  setTimeout(function() {
-    var sq = document.getElementById('f-q');
-    if (sq && !sq._userTyped && sq.value) { sq.value = ''; applyFilters(); }
-  }, 100);
-  setTimeout(function() {
-    var sq = document.getElementById('f-q');
-    if (sq && !sq._userTyped && sq.value) { sq.value = ''; applyFilters(); }
-  }, 500);
 }
 
 function applyFilters() {
