@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Canada-Directory | Find Canadian Businesses</title>
 
+<!-- EmailJS — client-side email sending for OTP -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
 <!-- Firebase Compat SDK (works in any browser, no module needed) -->
 <!-- Firebase must load first, synchronously -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -562,6 +565,31 @@ tbody tr:hover td{background:#FAFAF8;}
   </div>
 </div>
 
+<!-- ═══════════════════ OTP VERIFY ═══════════════════ -->
+<div id="page-otp" class="page">
+  <div class="auth-page">
+    <div class="auth-box">
+      <div class="auth-logo"><div class="leaf">🍁</div><h2>Canada-Directory</h2></div>
+      <h1 class="auth-title">Verify Your Email</h1>
+      <p class="auth-sub" id="otp-sub">We sent a 6-digit code to your email. Enter it below to create your account.</p>
+      <div class="form-group">
+        <label class="label">Verification Code</label>
+        <input type="text" id="otp-code" class="inp" placeholder="123456" maxlength="6"
+               inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code"
+               style="font-size:24px;letter-spacing:8px;text-align:center;"
+               onkeydown="if(event.key==='Enter')doVerifyOtp()">
+      </div>
+      <button class="btn btn-red w100" onclick="doVerifyOtp()">Verify &amp; Create Account →</button>
+      <div id="otp-err" class="err-box hidden"></div>
+      <div id="otp-ok" class="ok-box hidden"></div>
+      <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--grey-dark);">
+        Didn't receive it? <a onclick="resendOtp()" style="cursor:pointer;color:var(--red);">Resend code</a>
+        &nbsp;·&nbsp; <a onclick="showPage('signup')" style="cursor:pointer;">← Change email</a>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════════ FORGOT ═══════════════════ -->
 <div id="page-forgot" class="page">
   <div class="auth-page">
@@ -777,6 +805,20 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
+// ── EmailJS config — fill these in from your emailjs.com dashboard ──
+// 1. Sign up at https://www.emailjs.com (free: 200 emails/month)
+// 2. Add an Email Service (Gmail, Outlook, etc.) → copy its Service ID below
+// 3. Create an Email Template with variables: {{to_name}}, {{to_email}}, {{otp_code}}
+//    Subject:  Your Canada-Directory verification code
+//    Body:     Hi {{to_name}}, your 6-digit code is: {{otp_code}}  (expires in 10 min)
+// 4. Copy your Public Key from Account → API Keys
+const EMAILJS_PUBLIC_KEY  = 'YOUR_EMAILJS_PUBLIC_KEY';   // e.g. 'abc123XYZ'
+const EMAILJS_SERVICE_ID  = 'YOUR_SERVICE_ID';            // e.g. 'service_xxxxxxx'
+const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';           // e.g. 'template_xxxxxxx'
+
+// In-memory store for pending signup (never written to Firestore)
+var _pendingSignup = null;
+
 // Admin role checked via Firestore only — no credentials in code
 const PLACES_KEY = 'AIzaSyCup-QVNvZKnAiFihai8sABnrBWr0IjIVk';
 let IS_ADMIN = false;
@@ -991,11 +1033,117 @@ function doSignup() {
   if (!nm||!em||!pw) { showErr('su-err','Please fill all fields.'); return; }
   if (pw.length < 8) { showErr('su-err','Password must be at least 8 characters.'); return; }
   hideEl('su-err');
+
+  // Check if EmailJS is configured
+  if (EMAILJS_PUBLIC_KEY === 'YOUR_EMAILJS_PUBLIC_KEY') {
+    showErr('su-err','Email verification is not yet configured. Please contact the site administrator.');
+    return;
+  }
+
+  // Generate a 6-digit OTP
+  var otp = String(Math.floor(100000 + Math.random() * 900000));
+  var expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  // Hold signup details in memory (not persisted anywhere)
+  _pendingSignup = { nm: nm, em: em, pw: pw, otp: otp, expiresAt: expiresAt };
+
+  // Store OTP in Firestore so resend can regenerate without re-asking for password
+  db.collection('pending_otps').doc(em).set({
+    otp: otp,
+    name: nm,
+    expiresAt: firebase.firestore.Timestamp.fromDate(expiresAt),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function() {
+    // Send OTP email via EmailJS
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    return emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_name:  nm,
+      to_email: em,
+      otp_code: otp
+    });
+  }).then(function() {
+    document.getElementById('otp-sub').textContent =
+      'We sent a 6-digit code to ' + em + '. Enter it below to create your account.';
+    document.getElementById('otp-code').value = '';
+    hideEl('otp-err');
+    hideEl('otp-ok');
+    showPage('otp');
+  }).catch(function(e) {
+    _pendingSignup = null;
+    showErr('su-err', 'Failed to send verification email. Please try again. (' + (e.text || e.message || e) + ')');
+  });
+}
+
+function doVerifyOtp() {
+  var entered = (gv('otp-code') || '').trim();
+  if (!entered || entered.length !== 6) { showErr('otp-err','Please enter the 6-digit code.'); return; }
+
+  if (!_pendingSignup) {
+    showErr('otp-err','Session expired. Please go back and sign up again.');
+    return;
+  }
+
+  var now = new Date();
+  if (now > _pendingSignup.expiresAt) {
+    _pendingSignup = null;
+    showErr('otp-err','Code has expired. Please go back and sign up again.');
+    return;
+  }
+
+  if (entered !== _pendingSignup.otp) {
+    showErr('otp-err','Incorrect code. Please try again.');
+    return;
+  }
+
+  hideEl('otp-err');
+
+  // OTP correct — create the account now
+  var nm = _pendingSignup.nm, em = _pendingSignup.em, pw = _pendingSignup.pw;
+  _pendingSignup = null;
+
   auth.createUserWithEmailAndPassword(em, pw).then(function(cred) {
-    cred.user.sendEmailVerification();
-    saveUserDoc(cred.user, nm);
-    showEl('su-ok', '✅ Account created! Check your email to verify your address then sign in.');
-  }).catch(function(e) { showErr('su-err', friendlyErr(e.code)); });
+    // Clean up the OTP doc and save user record
+    db.collection('pending_otps').doc(em).delete();
+    return saveUserDoc(cred.user, nm);
+  }).then(function() {
+    showEl('otp-ok', 'Account created! You are now signed in.');
+    toast('Welcome to Canada-Directory! 🍁', 'ok');
+    setTimeout(function() { showPage('home'); }, 1500);
+  }).catch(function(e) { showErr('otp-err', friendlyErr(e.code)); });
+}
+
+function resendOtp() {
+  if (!_pendingSignup) {
+    toast('Session expired. Please go back and sign up again.', 'err');
+    showPage('signup');
+    return;
+  }
+
+  // Generate a new OTP
+  var otp = String(Math.floor(100000 + Math.random() * 900000));
+  var expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  _pendingSignup.otp = otp;
+  _pendingSignup.expiresAt = expiresAt;
+
+  db.collection('pending_otps').doc(_pendingSignup.em).set({
+    otp: otp,
+    name: _pendingSignup.nm,
+    expiresAt: firebase.firestore.Timestamp.fromDate(expiresAt),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function() {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    return emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_name:  _pendingSignup.nm,
+      to_email: _pendingSignup.em,
+      otp_code: otp
+    });
+  }).then(function() {
+    toast('New code sent to ' + _pendingSignup.em, 'ok');
+    document.getElementById('otp-code').value = '';
+    hideEl('otp-err');
+  }).catch(function(e) {
+    toast('Failed to resend code: ' + (e.text || e.message || e), 'err');
+  });
 }
 
 function doForgot() {
