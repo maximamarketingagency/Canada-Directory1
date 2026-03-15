@@ -1018,7 +1018,7 @@ function friendlyErr(code) {
 // ════════════════════════════════════════════════
 // PAGE NAVIGATION
 // ════════════════════════════════════════════════
-function showPage(p) {
+function showPage(p, skipHash) {
   document.querySelectorAll('.page').forEach(function(el){ el.classList.remove('active'); });
   var el = document.getElementById('page-'+p);
   if (!el) return;
@@ -1026,11 +1026,25 @@ function showPage(p) {
   var noFt = ['admin','bizportal','login','signup','forgot'];
   document.getElementById('main-footer').style.display = noFt.includes(p) ? 'none' : '';
   window.scrollTo(0,0);
+  if (!skipHash) location.hash = p;
   if (p==='home')     initHome();
   if (p==='browse')   initBrowse();
   if (p==='admin')    { if(!CU||!IS_ADMIN){sessionStorage.setItem('dest','admin');showPage('login');return;} initAdmin(); }
   if (p==='bizportal'){ if(!CU){sessionStorage.setItem('dest','bizportal');showPage('login');return;} initBizPortal(); }
 }
+// Restore page from URL hash on load and handle back/forward
+function _routeFromHash() {
+  var h = location.hash.replace('#','');
+  if (!h) return;
+  if (h.indexOf('detail/') === 0) {
+    var bizId = h.split('/')[1];
+    if (bizId) openDetail(bizId);
+  } else if (document.getElementById('page-'+h)) {
+    showPage(h, true);
+  }
+}
+window.addEventListener('hashchange', _routeFromHash);
+_routeFromHash();
 
 // ════════════════════════════════════════════════
 // HOME
@@ -1158,6 +1172,7 @@ function doSearch() {
 function openDetail(bizId) {
   activeBizId=bizId;
   showPage('detail');
+  location.hash = 'detail/' + bizId;
   db.collection('businesses').doc(bizId).get().then(function(snap) {
     if (!snap.exists) { toast('Business not found.','err'); showPage('browse'); return; }
     var b=Object.assign({id:snap.id},snap.data());
