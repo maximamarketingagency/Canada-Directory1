@@ -1058,13 +1058,17 @@ auth.onAuthStateChanged(async function(user) {
 
 async function saveUserDoc(user, name) {
   try {
-    await db.collection('users').doc(user.uid).set({
+    var ref = db.collection('users').doc(user.uid);
+    var snap = await ref.get();
+    var data = {
       uid: user.uid, email: user.email,
       displayName: name || user.displayName || '',
       emailVerified: user.emailVerified,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      role: 'user', disabled: false
-    }, {merge: true});
+      disabled: false
+    };
+    if (!snap.exists) data.role = 'user';
+    await ref.set(data, {merge: true});
   } catch(e){}
 }
 
