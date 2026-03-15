@@ -990,8 +990,16 @@ function signInGoogle() {
   var provider = new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider).then(function(result) {
     saveUserDoc(result.user);
-    toast('Welcome! 🍁', 'ok');
-    sessionStorage.setItem('pendingLogin', '1');
+    // Google already verifies email — no verification email needed.
+    // New Google users have no listing yet, so send them to home.
+    // Returning users get the normal pendingLogin redirect (→ admin or bizportal).
+    if (result.additionalUserInfo && result.additionalUserInfo.isNewUser) {
+      toast('Welcome to Canada-Directory! 🍁', 'ok');
+      showPage('home');
+    } else {
+      toast('Welcome back! 🍁', 'ok');
+      sessionStorage.setItem('pendingLogin', '1');
+    }
   }).catch(function(e) {
     toast(friendlyErr(e.code), 'err');
   });
@@ -1516,6 +1524,7 @@ function aApprove(reqId) {
       name:r.name,industry:r.industry,province:r.province,city:r.city,
       phone:r.phone,email:r.email,address:r.address||'',website:r.website||'',
       description:r.description,approved:true,avgRating:0,reviewCount:0,
+      ownerUid:r.submittedBy||null,
       createdAt:firebase.firestore.FieldValue.serverTimestamp()
     }).then(function(){
       db.collection('listing_requests').doc(reqId).update({status:'approved',approvedAt:firebase.firestore.FieldValue.serverTimestamp()});
@@ -1761,7 +1770,10 @@ function initBizPortal(){
     if(c)c.innerHTML='<div class="empty"><div class="eico">📧</div><h3>Email Not Verified</h3><p>Please verify your email address before accessing the Business Portal. Check your inbox for the verification link.</p><button class="btn btn-red" style="margin-top:16px;" onclick="auth.currentUser.sendEmailVerification().then(function(){toast(\'Verification email sent!\',\'ok\');})">Resend Verification Email</button></div>';
     return;
   }
-  db.collection('businesses').where('email','==',CU.email).where('approved','==',true).limit(1).get().then(function(snap){
+  // Secure: look up by ownerUid (the UID of whoever submitted the listing),
+  // NOT by email. Email-matching is a security hole — any account whose email
+  // matches a business contact address would gain access to that business.
+  db.collection('businesses').where('ownerUid','==',CU.uid).where('approved','==',true).limit(1).get().then(function(snap){
     if(!snap.empty){var b=Object.assign({id:snap.docs[0].id},snap.docs[0].data());activeBizId=b.id;setTxt('bsp-name',b.name);var av=document.getElementById('b-av');if(av)av.textContent=(b.name||'B')[0];}
     bTab('overview');
   });
