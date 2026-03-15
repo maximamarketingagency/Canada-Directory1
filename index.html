@@ -1040,7 +1040,15 @@ auth.onAuthStateChanged(async function(user) {
     } catch(e) { CUD = null; IS_ADMIN = false; }
     renderNavUser(user);
     var dest = sessionStorage.getItem('dest');
-    if (dest) { sessionStorage.removeItem('dest'); showPage(dest); }
+    if (dest) {
+      sessionStorage.removeItem('dest');
+      sessionStorage.removeItem('pendingLogin');
+      showPage(dest);
+    } else if (sessionStorage.getItem('pendingLogin')) {
+      sessionStorage.removeItem('pendingLogin');
+      if (IS_ADMIN) showPage('admin');
+      else showPage('bizportal');
+    }
   } else {
     CUD = null;
     IS_ADMIN = false;
@@ -1050,13 +1058,17 @@ auth.onAuthStateChanged(async function(user) {
 
 async function saveUserDoc(user, name) {
   try {
-    await db.collection('users').doc(user.uid).set({
+    var ref = db.collection('users').doc(user.uid);
+    var snap = await ref.get();
+    var data = {
       uid: user.uid, email: user.email,
       displayName: name || user.displayName || '',
       emailVerified: user.emailVerified,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      role: 'user', disabled: false
-    }, {merge: true});
+      disabled: false
+    };
+    if (!snap.exists) data.role = 'user';
+    await ref.set(data, {merge: true});
   } catch(e){}
 }
 
@@ -1089,7 +1101,7 @@ function signInGoogle() {
   auth.signInWithPopup(provider).then(function(result) {
     saveUserDoc(result.user);
     toast('Welcome! 🍁', 'ok');
-    routeAfterLogin(result.user);
+    sessionStorage.setItem('pendingLogin', '1');
   }).catch(function(e) {
     toast(friendlyErr(e.code), 'err');
   });
@@ -1102,7 +1114,7 @@ function doLogin() {
   auth.signInWithEmailAndPassword(em, pw).then(function(cred) {
     saveUserDoc(cred.user);
     toast('Welcome back! 🍁','ok');
-    routeAfterLogin(cred.user);
+    sessionStorage.setItem('pendingLogin', '1');
   }).catch(function(e) { showErr('li-err', friendlyErr(e.code)); });
 }
 
@@ -1130,10 +1142,6 @@ function doLogout() {
   auth.signOut().then(function() { toast('Signed out. See you soon! 🍁','inf'); showPage('home'); });
 }
 
-function routeAfterLogin(user) {
-  if (IS_ADMIN) showPage('admin');
-  else showPage('bizportal');
-}
 
 function friendlyErr(code) {
   var m = {'auth/user-not-found':'No account found with this email.','auth/wrong-password':'Incorrect password.','auth/invalid-credential':'Incorrect email or password.','auth/email-already-in-use':'An account already exists with this email.','auth/weak-password':'Password must be at least 8 characters.','auth/invalid-email':'Please enter a valid email address.','auth/too-many-requests':'Too many attempts. Try again later.','auth/popup-closed-by-user':'Sign-in was cancelled.'};
