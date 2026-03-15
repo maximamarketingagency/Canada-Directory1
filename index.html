@@ -562,6 +562,32 @@ tbody tr:hover td{background:#FAFAF8;}
   </div>
 </div>
 
+<!-- ═══════════════════ EMAIL LINK SENT ═══════════════════ -->
+<div id="page-verify-sent" class="page">
+  <div class="auth-page">
+    <div class="auth-box" style="text-align:center;">
+      <div class="auth-logo"><div class="leaf">🍁</div><h2>Canada-Directory</h2></div>
+      <div style="font-size:52px;margin:12px 0;">📧</div>
+      <h1 class="auth-title">Check Your Email</h1>
+      <p class="auth-sub" id="vs-sub">We sent a verification link to your email address. Click it to create your account — no code needed.</p>
+      <p style="font-size:13px;color:var(--grey-dark);margin-top:8px;">The link expires in 24 hours. Check your spam folder if you don't see it.</p>
+      <div id="vs-err" class="err-box hidden" style="margin-top:12px;"></div>
+      <div id="vs-ok" class="ok-box hidden" style="margin-top:12px;"></div>
+      <!-- Shown only if user opens the link on a different device -->
+      <div id="vs-email-prompt" class="hidden" style="margin-top:16px;">
+        <p style="font-size:14px;color:var(--grey-dark);">Opening on a different device? Enter the email you signed up with:</p>
+        <div class="form-group"><input type="email" id="vs-em" class="inp" placeholder="you@example.com"></div>
+        <button class="btn btn-red w100" onclick="completeEmailLink()">Complete Sign Up →</button>
+      </div>
+      <div style="margin-top:16px;font-size:13px;color:var(--grey-dark);">
+        <a onclick="resendVerifyLink()" style="cursor:pointer;color:var(--red);">Resend link</a>
+        &nbsp;·&nbsp;
+        <a onclick="showPage('signup')" style="cursor:pointer;">← Change email</a>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════════ FORGOT ═══════════════════ -->
 <div id="page-forgot" class="page">
   <div class="auth-page">
@@ -986,17 +1012,91 @@ function doLogin() {
   }).catch(function(e) { showErr('li-err', friendlyErr(e.code)); });
 }
 
+// ── Signup via Firebase Email Link (free, no 3rd-party, unlimited) ──
+// Flow: fill form → receive email link → click link → account is created.
+// Pending signup data (name + password) is kept in localStorage only.
+
+function _signupActionCodeSettings() {
+  return {
+    // Must match your domain; Firebase redirects back here after the click
+    url: window.location.origin + window.location.pathname,
+    handleCodeInApp: true
+  };
+}
+
 function doSignup() {
   var nm = gv('su-nm'), em = gv('su-em'), pw = gv('su-pw');
   if (!nm||!em||!pw) { showErr('su-err','Please fill all fields.'); return; }
   if (pw.length < 8) { showErr('su-err','Password must be at least 8 characters.'); return; }
   hideEl('su-err');
-  auth.createUserWithEmailAndPassword(em, pw).then(function(cred) {
-    cred.user.sendEmailVerification();
-    saveUserDoc(cred.user, nm);
-    showEl('su-ok', '✅ Account created! Check your email to verify your address then sign in.');
+
+  auth.sendSignInLinkToEmail(em, _signupActionCodeSettings()).then(function() {
+    // Save email + signup data in localStorage so we can finish after the click
+    localStorage.setItem('emailForSignIn', em);
+    localStorage.setItem('pendingSignupName', nm);
+    localStorage.setItem('pendingSignupPw', pw);
+    var sub = document.getElementById('vs-sub');
+    if (sub) sub.textContent = 'We sent a verification link to ' + em + '. Click it to create your account — no code needed.';
+    hideEl('vs-err');
+    hideEl('vs-ok');
+    hideEl('vs-email-prompt');
+    showPage('verify-sent');
   }).catch(function(e) { showErr('su-err', friendlyErr(e.code)); });
 }
+
+function resendVerifyLink() {
+  var em = localStorage.getItem('emailForSignIn');
+  if (!em) { toast('Please go back and sign up again.','err'); showPage('signup'); return; }
+  auth.sendSignInLinkToEmail(em, _signupActionCodeSettings()).then(function() {
+    showEl('vs-ok', 'New link sent to ' + em + '.');
+  }).catch(function(e) { showErr('vs-err', friendlyErr(e.code)); });
+}
+
+// Called only when user opens the link on a different device (no email in localStorage)
+function completeEmailLink() {
+  var em = (gv('vs-em') || '').trim();
+  if (!em) { showErr('vs-err','Please enter your email address.'); return; }
+  _finishEmailLinkSignup(em, window.location.href);
+}
+
+function _finishEmailLinkSignup(em, link) {
+  var nm = localStorage.getItem('pendingSignupName') || '';
+  var pw = localStorage.getItem('pendingSignupPw') || '';
+  auth.signInWithEmailLink(em, link).then(function(result) {
+    var user = result.user;
+    var tasks = [];
+    if (pw) tasks.push(user.updatePassword(pw));
+    if (nm) tasks.push(user.updateProfile({ displayName: nm }));
+    return Promise.all(tasks).then(function() { return saveUserDoc(user, nm); });
+  }).then(function() {
+    localStorage.removeItem('emailForSignIn');
+    localStorage.removeItem('pendingSignupName');
+    localStorage.removeItem('pendingSignupPw');
+    // Clean URL so the link can't be reused on reload
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    toast('Welcome to Canada-Directory! 🍁', 'ok');
+    showPage('home');
+  }).catch(function(e) {
+    showErr('vs-err', friendlyErr(e.code) || e.message);
+    showEl('vs-email-prompt'); // let user re-enter their email
+  });
+}
+
+// ── Detect email link on page load and complete signup automatically ──
+(function checkEmailLink() {
+  if (!auth.isSignInWithEmailLink(window.location.href)) return;
+  var em = localStorage.getItem('emailForSignIn');
+  if (em) {
+    // Same device — complete automatically
+    _finishEmailLinkSignup(em, window.location.href);
+  } else {
+    // Different device — ask for email
+    showPage('verify-sent');
+    setTimeout(function() { showEl('vs-email-prompt'); }, 100);
+  }
+}());
 
 function doForgot() {
   var em = gv('fp-em');
