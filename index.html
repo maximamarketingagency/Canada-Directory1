@@ -401,7 +401,7 @@ tbody tr:hover td{background:#FAFAF8;}
       <h1>Find Every Canadian<br>Business You Need — <em>Instantly.</em></h1>
       <p>Discover, review and connect with verified Canadian businesses from coast to coast.</p>
       <div class="search-wrap">
-        <input type="text" id="hs-q" placeholder="Search businesses, services, categories…" onkeydown="if(event.key==='Enter')doSearch()">
+        <input type="text" id="hs-q" placeholder="Search businesses, services, categories…" onkeydown="if(event.key==='Enter')doSearch()" autocomplete="off">
         <select id="hs-prov">
           <option value="">All Canada</option>
           <option>Ontario</option><option>Quebec</option><option>British Columbia</option>
@@ -695,15 +695,15 @@ tbody tr:hover td{background:#FAFAF8;}
     <h2 style="text-align:center;">List Your Business</h2>
     <p class="msub" style="text-align:center;">Fill out the form below. We review and respond within 24 hours.</p>
     <div class="g2">
-      <div class="form-group gc2"><label class="label">Business Name *</label><input type="text" id="lb-nm" class="inp" placeholder="e.g. Smith's Plumbing"></div>
-      <div class="form-group"><label class="label">Industry *</label><select id="lb-ind" class="inp inp-sel"><option value="">Select Industry</option></select></div>
-      <div class="form-group"><label class="label">Province *</label><select id="lb-prov" class="inp inp-sel"><option value="">Select Province</option><option>Ontario</option><option>Quebec</option><option>British Columbia</option><option>Alberta</option><option>Manitoba</option><option>Saskatchewan</option><option>Nova Scotia</option><option>New Brunswick</option><option>Newfoundland</option></select></div>
-      <div class="form-group"><label class="label">City *</label><input type="text" id="lb-city" class="inp" placeholder="e.g. Toronto"></div>
-      <div class="form-group"><label class="label">Phone *</label><input type="tel" id="lb-ph" class="inp" placeholder="416-555-0100"></div>
-      <div class="form-group gc2"><label class="label">Business Email *</label><input type="email" id="lb-em" class="inp" placeholder="info@yourbusiness.ca"></div>
-      <div class="form-group gc2"><label class="label">Address</label><input type="text" id="lb-addr" class="inp" placeholder="123 Main St, City, Province"></div>
-      <div class="form-group gc2"><label class="label">Website</label><input type="url" id="lb-web" class="inp" placeholder="https://yourbusiness.ca"></div>
-      <div class="form-group gc2"><label class="label">Business Description *</label><textarea id="lb-desc" class="inp inp-ta" placeholder="Describe your business, services, years of experience…"></textarea></div>
+      <div class="form-group gc2"><label class="label">Business Name *</label><input type="text" id="lb-nm" class="inp" placeholder="e.g. Smith's Plumbing" autocomplete="off"></div>
+      <div class="form-group"><label class="label">Industry *</label><select id="lb-ind" class="inp inp-sel" autocomplete="off"><option value="">Select Industry</option></select></div>
+      <div class="form-group"><label class="label">Province *</label><select id="lb-prov" class="inp inp-sel" autocomplete="off"><option value="">Select Province</option><option>Ontario</option><option>Quebec</option><option>British Columbia</option><option>Alberta</option><option>Manitoba</option><option>Saskatchewan</option><option>Nova Scotia</option><option>New Brunswick</option><option>Newfoundland</option></select></div>
+      <div class="form-group"><label class="label">City *</label><input type="text" id="lb-city" class="inp" placeholder="e.g. Toronto" autocomplete="off"></div>
+      <div class="form-group"><label class="label">Phone *</label><input type="tel" id="lb-ph" class="inp" placeholder="416-555-0100" autocomplete="off"></div>
+      <div class="form-group gc2"><label class="label">Business Email *</label><input type="email" id="lb-em" class="inp" placeholder="info@yourbusiness.ca" autocomplete="off"></div>
+      <div class="form-group gc2"><label class="label">Address</label><input type="text" id="lb-addr" class="inp" placeholder="123 Main St, City, Province" autocomplete="off"></div>
+      <div class="form-group gc2"><label class="label">Website</label><input type="url" id="lb-web" class="inp" placeholder="https://yourbusiness.ca" autocomplete="off"></div>
+      <div class="form-group gc2"><label class="label">Business Description *</label><textarea id="lb-desc" class="inp inp-ta" placeholder="Describe your business, services, years of experience…" autocomplete="off"></textarea></div>
     </div>
     <div style="background:#FFF8E7;border-radius:8px;padding:12px;font-size:13px;color:#7A5900;margin-bottom:14px;">⚠️ By submitting you confirm this is a legitimate Canadian business. We will review within 24 hours.</div>
     <button class="btn btn-red w100" onclick="submitListingReq()">Submit for Review →</button>
@@ -727,8 +727,8 @@ tbody tr:hover td{background:#FAFAF8;}
       </div>
       <div style="font-size:12px;color:var(--grey-dark);margin-top:4px;" id="star-hint">Click to rate</div>
     </div>
-    <div class="form-group"><label class="label">Title</label><input type="text" id="rv-title" class="inp" placeholder="e.g. Great experience!"></div>
-    <div class="form-group"><label class="label">Your Review *</label><textarea id="rv-txt" class="inp inp-ta" placeholder="Share your honest experience…"></textarea></div>
+    <div class="form-group"><label class="label">Title</label><input type="text" id="rv-title" class="inp" placeholder="e.g. Great experience!" autocomplete="off"></div>
+    <div class="form-group"><label class="label">Your Review *</label><textarea id="rv-txt" class="inp inp-ta" placeholder="Share your honest experience…" autocomplete="off"></textarea></div>
     <button class="btn btn-red w100" onclick="submitReview()">Submit Review →</button>
     <div id="rv-err" class="err-box hidden"></div>
     <p style="font-size:12px;color:var(--grey-dark);margin-top:10px;text-align:center;">Reviews are screened for spam. Only verified accounts can post.</p>
@@ -741,7 +741,7 @@ tbody tr:hover td{background:#FAFAF8;}
     <button class="modal-x" onclick="closeModal('m-reply')">✕</button>
     <h2>Reply to Review</h2>
     <p class="msub">Your reply will be publicly visible under this review.</p>
-    <div class="form-group"><textarea id="rp-txt" class="inp inp-ta" placeholder="Write a professional, helpful response…"></textarea></div>
+    <div class="form-group"><textarea id="rp-txt" class="inp inp-ta" placeholder="Write a professional, helpful response…" autocomplete="off"></textarea></div>
     <button class="btn btn-red w100" onclick="submitReply()">Post Reply →</button>
   </div>
 </div>
@@ -786,7 +786,8 @@ let IS_ADMIN = false;
 // ════════════════════════════════════════════════
 let CU = null;           // current firebase user
 let CUD = null;          // current user firestore doc
-let activeBizId = null;  // biz detail page
+let activeBizId    = null;  // biz detail page
+let activeBizEmail = null;  // email of business currently viewed (for reply auth)
 let reviewStar = 0;
 let reviewBizId = null;
 let replyRevId  = null;
@@ -1193,6 +1194,7 @@ function openDetail(bizId) {
   db.collection('businesses').doc(bizId).get().then(function(snap) {
     if (!snap.exists) { toast('Business not found.','err'); showPage('browse'); return; }
     var b=Object.assign({id:snap.id},snap.data());
+    activeBizEmail = b.email || null;
     var ind=INDUSTRIES.find(function(i){return i.id===b.industry;})||{icon:'🏢',name:b.industry||''};
     var avg=b.avgRating||0;
     var col=IND_COLORS[b.industry]||'#C02216,#7A1210';
@@ -1247,7 +1249,7 @@ function loadDetailReviews(bizId) {
             '<div><span class="stars" style="font-size:12px;">'+'★'.repeat(r.rating||0)+'</span>' +
             '<span style="font-size:11px;color:var(--grey-dark);margin-left:7px;">'+fmtDate(r.createdAt)+'</span></div></div>' +
             (isAdmin?'<button class="btn btn-danger btn-sm" style="padding:4px 10px;" onclick="adminDelRev(\''+r.id+'\')">🗑️</button>':'')+
-            '<button class="btn btn-white btn-sm" style="padding:4px 10px;" onclick="openReplyModal(\''+r.id+'\')">💬</button>' +
+            ((isAdmin||(CU&&activeBizEmail&&CU.email===activeBizEmail))?'<button class="btn btn-white btn-sm" style="padding:4px 10px;" onclick="openReplyModal(\''+r.id+'\')">💬 Reply</button>':'')+
             '</div>' +
             (r.title?'<div style="font-weight:700;font-size:13px;margin-bottom:4px;">'+escHtml(r.title)+'</div>':'')+
             '<div class="rev-txt">'+escHtml(r.text||'')+'</div>' +
@@ -1287,8 +1289,10 @@ function submitReview() {
   if (!txt||txt.length<10) { showErr('rv-err','Review must be at least 10 characters.'); return; }
   // Spam check
   var flagged=spamCheck(txt);
-  db.collection('reviews').where('bizId','==',reviewBizId).where('userId','==',CU.uid).get().then(function(dup){
-    if (!dup.empty) { showErr('rv-err','You have already reviewed this business.'); return; }
+  var twoMonthsAgo = new Date(Date.now() - 60*24*60*60*1000);
+  db.collection('reviews').where('bizId','==',reviewBizId).where('userId','==',CU.uid)
+    .where('createdAt','>=',twoMonthsAgo).get().then(function(dup){
+    if (!dup.empty) { showErr('rv-err','You have already reviewed this business in the last 2 months. You can review again after 60 days.'); return; }
     db.collection('reviews').add({
       bizId:reviewBizId, userId:CU.uid,
       userName:CU.displayName||CU.email.split('@')[0],
@@ -1326,19 +1330,35 @@ function updateBizStats(bizId) {
 
 function openReplyModal(revId) { replyRevId=revId; setVal('rp-txt',''); openModal('m-reply'); }
 function submitReply() {
+  if (!CU) { toast('Please sign in.','err'); return; }
   var txt=gv('rp-txt'); if(!txt) return;
-  db.collection('reviews').doc(replyRevId).update({reply:txt,repliedAt:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){
+  // Verify caller is the business owner of this review's business, or admin
+  db.collection('reviews').doc(replyRevId).get().then(function(rsnap){
+    if (!rsnap.exists) { toast('Review not found.','err'); return; }
+    var bizId = rsnap.data().bizId;
+    if (IS_ADMIN) {
+      // Admin can always reply
+      return db.collection('reviews').doc(replyRevId).update({reply:txt,repliedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    }
+    // Check user owns that business
+    return db.collection('businesses').doc(bizId).get().then(function(bsnap){
+      if (!bsnap.exists || bsnap.data().email !== CU.email) { toast('Only the business owner can reply to reviews.','err'); return; }
+      return db.collection('reviews').doc(replyRevId).update({reply:txt,repliedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    });
+  }).then(function(){
     closeModal('m-reply'); toast('Reply posted! 🍁','ok');
     if (activeBizId) loadDetailReviews(activeBizId);
     if (adminTab_cur==='reviews') aTab('reviews');
     if (bizTab_cur==='reviews') bTab('reviews');
-  });
+  }).catch(function(e){ toast(e.message,'err'); });
 }
 
 // ════════════════════════════════════════════════
 // LIST BUSINESS REQUEST
 // ════════════════════════════════════════════════
 function submitListingReq() {
+  if (!CU) { showErr('lb-err','Please sign in to submit a listing.'); return; }
+  if (!CU.emailVerified) { showErr('lb-err','Please verify your email before submitting a listing. Check your inbox for the verification link.'); return; }
   var nm=gv('lb-nm'),ind=gv2('lb-ind'),prov=gv2('lb-prov'),city=gv('lb-city'),ph=gv('lb-ph'),em=gv('lb-em'),desc=gv('lb-desc');
   if (!nm||!ind||!prov||!city||!ph||!em||!desc) { showErr('lb-err','Please fill all required fields.'); return; }
   hideEl('lb-err');
@@ -1581,6 +1601,7 @@ function aReviews(){
         '<td>'+(r.flagged?'<span class="tag tag-red">🚩 Flagged</span>':'<span class="tag tag-green">✓ Visible</span>')+'</td>' +
         '<td><div class="td-acts">' +
         '<button class="btn btn-white btn-sm" onclick="aToggleFlag(\''+r.id+'\','+r.flagged+')">'+(r.flagged?'Restore':'Flag')+'</button>' +
+        '<button class="btn btn-white btn-sm" onclick="adminEditRev(\''+r.id+'\','+JSON.stringify(r.text||'')+')">Edit</button>' +
         '<button class="btn btn-danger btn-sm" onclick="adminDelRev(\''+r.id+'\')">Delete</button>' +
         '<button class="btn btn-white btn-sm" onclick="openReplyModal(\''+r.id+'\')">Reply</button>' +
         '</div></td></tr>';}).join('')+'</tbody></table></div>';
@@ -1600,6 +1621,18 @@ function adminDelRev(id){
       });
     });
   });
+}
+
+function adminEditRev(id, currentText){
+  var newText = prompt('Edit review text:', currentText);
+  if (newText === null) return; // cancelled
+  newText = newText.trim();
+  if (!newText) { toast('Review text cannot be empty.','err'); return; }
+  db.collection('reviews').doc(id).update({text: newText, editedByAdmin: true, editedAt: firebase.firestore.FieldValue.serverTimestamp()}).then(function(){
+    toast('Review updated.','ok');
+    if(adminTab_cur==='reviews') aReviews();
+    if(activeBizId) loadDetailReviews(activeBizId);
+  }).catch(function(e){ toast(e.message,'err'); });
 }
 
 function aAccounts(){
@@ -1658,6 +1691,11 @@ function aSettings(){
 // ════════════════════════════════════════════════
 function initBizPortal(){
   if(!CU){showPage('login');return;}
+  if(!CU.emailVerified){
+    var c=document.getElementById('b-content');
+    if(c)c.innerHTML='<div class="empty"><div class="eico">📧</div><h3>Email Not Verified</h3><p>Please verify your email address before accessing the Business Portal. Check your inbox for the verification link.</p><button class="btn btn-red" style="margin-top:16px;" onclick="auth.currentUser.sendEmailVerification().then(function(){toast(\'Verification email sent!\',\'ok\');})">Resend Verification Email</button></div>';
+    return;
+  }
   db.collection('businesses').where('email','==',CU.email).where('approved','==',true).limit(1).get().then(function(snap){
     if(!snap.empty){var b=Object.assign({id:snap.docs[0].id},snap.docs[0].data());activeBizId=b.id;setTxt('bsp-name',b.name);var av=document.getElementById('b-av');if(av)av.textContent=(b.name||'B')[0];}
     bTab('overview');
