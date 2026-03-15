@@ -570,20 +570,16 @@ tbody tr:hover td{background:#FAFAF8;}
       <div style="font-size:52px;margin:12px 0;">📧</div>
       <h1 class="auth-title">Check Your Email</h1>
       <p class="auth-sub" id="vs-sub">We sent a verification link to your email address. Click it to create your account — no code needed.</p>
-      <p style="font-size:13px;color:var(--grey-dark);margin-top:8px;">The link expires in 24 hours. Check your spam folder if you don't see it.</p>
+      <p style="font-size:13px;color:var(--grey-dark);margin-top:8px;">Check your spam folder if you don't see it within a minute.</p>
       <div id="vs-err" class="err-box hidden" style="margin-top:12px;"></div>
       <div id="vs-ok" class="ok-box hidden" style="margin-top:12px;"></div>
-      <!-- Shown only if user opens the link on a different device -->
-      <div id="vs-email-prompt" class="hidden" style="margin-top:16px;">
-        <p style="font-size:14px;color:var(--grey-dark);">Opening on a different device? Enter the email you signed up with:</p>
-        <div class="form-group"><input type="email" id="vs-em" class="inp" placeholder="you@example.com"></div>
-        <button class="btn btn-red w100" onclick="completeEmailLink()">Complete Sign Up →</button>
-      </div>
-      <div style="margin-top:16px;font-size:13px;color:var(--grey-dark);">
-        <a onclick="resendVerifyLink()" style="cursor:pointer;color:var(--red);">Resend link</a>
+      <div id="vs-email-prompt" class="hidden"></div>
+      <div style="margin-top:20px;font-size:13px;color:var(--grey-dark);">
+        <a onclick="resendVerifyLink()" style="cursor:pointer;color:var(--red);">Resend verification email</a>
         &nbsp;·&nbsp;
         <a onclick="showPage('signup')" style="cursor:pointer;">← Change email</a>
       </div>
+      <p style="margin-top:18px;font-size:13px;color:var(--grey-dark);">Already verified? <a onclick="showPage('login')" style="cursor:pointer;color:var(--red);">Sign in →</a></p>
     </div>
   </div>
 </div>
@@ -1006,23 +1002,21 @@ function doLogin() {
   if (!em || !pw) { showErr('li-err','Please fill in all fields.'); return; }
   hideEl('li-err');
   auth.signInWithEmailAndPassword(em, pw).then(function(cred) {
+    if (!cred.user.emailVerified) {
+      // Send a fresh verification email and block access
+      cred.user.sendEmailVerification().then(function() { return auth.signOut(); });
+      showErr('li-err', 'Please verify your email first. We just resent the verification link — check your inbox.');
+      return;
+    }
     saveUserDoc(cred.user);
     toast('Welcome back! 🍁','ok');
     sessionStorage.setItem('pendingLogin', '1');
   }).catch(function(e) { showErr('li-err', friendlyErr(e.code)); });
 }
 
-// ── Signup via Firebase Email Link (free, no 3rd-party, unlimited) ──
-// Flow: fill form → receive email link → click link → account is created.
-// Pending signup data (name + password) is kept in localStorage only.
-
-function _signupActionCodeSettings() {
-  return {
-    // Must match your domain; Firebase redirects back here after the click
-    url: window.location.origin + window.location.pathname,
-    handleCodeInApp: true
-  };
-}
+// ── Signup: create account → send standard verification email → sign out ──
+// Uses Firebase's built-in "Verify your email address" email — free, trusted,
+// fully customisable in Firebase Console → Authentication → Templates.
 
 function doSignup() {
   var nm = gv('su-nm'), em = gv('su-em'), pw = gv('su-pw');
@@ -1030,72 +1024,43 @@ function doSignup() {
   if (pw.length < 8) { showErr('su-err','Password must be at least 8 characters.'); return; }
   hideEl('su-err');
 
-  auth.sendSignInLinkToEmail(em, _signupActionCodeSettings()).then(function() {
-    // Save email + signup data in localStorage so we can finish after the click
-    localStorage.setItem('emailForSignIn', em);
-    localStorage.setItem('pendingSignupName', nm);
-    localStorage.setItem('pendingSignupPw', pw);
-    var sub = document.getElementById('vs-sub');
-    if (sub) sub.textContent = 'We sent a verification link to ' + em + '. Click it to create your account — no code needed.';
-    hideEl('vs-err');
-    hideEl('vs-ok');
-    hideEl('vs-email-prompt');
-    showPage('verify-sent');
+  auth.createUserWithEmailAndPassword(em, pw).then(function(cred) {
+    return cred.user.updateProfile({ displayName: nm }).then(function() {
+      return saveUserDoc(cred.user, nm);
+    }).then(function() {
+      return cred.user.sendEmailVerification();
+    }).then(function() {
+      // Sign out immediately so the account cannot be used until verified
+      return auth.signOut();
+    }).then(function() {
+      localStorage.setItem('pendingVerifyEmail', em);
+      localStorage.setItem('pendingVerifyPw', pw);
+      var sub = document.getElementById('vs-sub');
+      if (sub) sub.textContent = 'We sent a verification email to ' + em + '. Click the link inside to activate your account.';
+      hideEl('vs-err'); hideEl('vs-ok'); hideEl('vs-email-prompt');
+      showPage('verify-sent');
+    });
   }).catch(function(e) { showErr('su-err', friendlyErr(e.code)); });
 }
 
 function resendVerifyLink() {
-  var em = localStorage.getItem('emailForSignIn');
-  if (!em) { toast('Please go back and sign up again.','err'); showPage('signup'); return; }
-  auth.sendSignInLinkToEmail(em, _signupActionCodeSettings()).then(function() {
-    showEl('vs-ok', 'New link sent to ' + em + '.');
+  var em = localStorage.getItem('pendingVerifyEmail');
+  var pw = localStorage.getItem('pendingVerifyPw');
+  if (!em || !pw) { toast('Please sign up again.','err'); showPage('signup'); return; }
+  // Briefly sign in to resend, then sign back out
+  auth.signInWithEmailAndPassword(em, pw).then(function(cred) {
+    return cred.user.sendEmailVerification().then(function() { return auth.signOut(); });
+  }).then(function() {
+    showEl('vs-ok', 'New verification email sent to ' + em + '.');
   }).catch(function(e) { showErr('vs-err', friendlyErr(e.code)); });
 }
 
-// Called only when user opens the link on a different device (no email in localStorage)
-function completeEmailLink() {
-  var em = (gv('vs-em') || '').trim();
-  if (!em) { showErr('vs-err','Please enter your email address.'); return; }
-  _finishEmailLinkSignup(em, window.location.href);
-}
-
-function _finishEmailLinkSignup(em, link) {
-  var nm = localStorage.getItem('pendingSignupName') || '';
-  var pw = localStorage.getItem('pendingSignupPw') || '';
-  auth.signInWithEmailLink(em, link).then(function(result) {
-    var user = result.user;
-    var tasks = [];
-    if (pw) tasks.push(user.updatePassword(pw));
-    if (nm) tasks.push(user.updateProfile({ displayName: nm }));
-    return Promise.all(tasks).then(function() { return saveUserDoc(user, nm); });
-  }).then(function() {
-    localStorage.removeItem('emailForSignIn');
-    localStorage.removeItem('pendingSignupName');
-    localStorage.removeItem('pendingSignupPw');
-    // Clean URL so the link can't be reused on reload
-    if (window.history && window.history.replaceState) {
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    toast('Welcome to Canada-Directory! 🍁', 'ok');
-    showPage('home');
-  }).catch(function(e) {
-    showErr('vs-err', friendlyErr(e.code) || e.message);
-    showEl('vs-email-prompt'); // let user re-enter their email
-  });
-}
-
-// ── Detect email link on page load and complete signup automatically ──
-(function checkEmailLink() {
-  if (!auth.isSignInWithEmailLink(window.location.href)) return;
-  var em = localStorage.getItem('emailForSignIn');
-  if (em) {
-    // Same device — complete automatically
-    _finishEmailLinkSignup(em, window.location.href);
-  } else {
-    // Different device — ask for email
-    showPage('verify-sent');
-    setTimeout(function() { showEl('vs-email-prompt'); }, 100);
-  }
+// ── On page load: detect if the user clicked the verification link in their email ──
+// Firebase redirects back to the app's URL — check if the email is now verified.
+(function checkEmailVerified() {
+  // Firebase will have signed the user in via the action link automatically
+  // onAuthStateChanged will fire; we handle the verified → proceed logic there.
+  // Nothing extra needed here — the standard Firebase action URL handles it.
 }());
 
 function doForgot() {
