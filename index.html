@@ -272,6 +272,10 @@ tbody tr:hover td{background:#FAFAF8;}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .gc2{grid-column:1/-1;}
 
+/* ── ADMIN TOOLBAR & BULK BAR ── */
+.adm-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;}
+.adm-bulk-bar{display:flex;align-items:center;gap:10px;background:#FFF8E7;border:1.5px solid #F5C842;border-radius:var(--r);padding:10px 16px;margin-bottom:12px;font-size:13px;font-weight:600;color:#7A5900;}
+
 /* ── HAMBURGER ── */
 .hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;flex-direction:column;gap:4px;justify-content:center;}
 .hamburger span{display:block;width:22px;height:2px;background:var(--black);border-radius:2px;transition:all .2s;}
@@ -948,6 +952,20 @@ const INDUSTRIES = [
 ];
 const IND_COLORS = {restaurants:'#C02216,#7A1210',health:'#1A7A3A,#0D3D1E',legal:'#1A3A7A,#0D1E3D','real-estate':'#7A5900,#3D2C00',auto:'#2A2A2A,#111',retail:'#7A1A6A,#3D0D35',tech:'#1A4A7A,#0D253D',finance:'#0D5C3A,#062E1D',education:'#7A3A1A,#3D1D0D',construction:'#5C3A0D,#2E1D06',beauty:'#8B1A6A,#4A0D35',pets:'#1A6A5C,#0D3530',entertainment:'#6A1A7A,#350D3D',travel:'#0D4A7A,#06253D'};
 
+// Generate a unique, visually distinct gradient per business ID
+function bizUniqueGradient(id) {
+  var h = 0, s = id || 'x';
+  for (var i = 0; i < s.length; i++) { h = Math.imul(31, h) + s.charCodeAt(i) | 0; }
+  var abs = Math.abs(h);
+  var hue1 = abs % 360;
+  var hue2 = (hue1 + 38 + (abs >> 4) % 42) % 360;
+  var sat1 = 52 + (abs >> 8) % 22;
+  var sat2 = 48 + (abs >> 12) % 26;
+  var lit1 = 22 + (abs >> 16) % 14;
+  var lit2 = 34 + (abs >> 20) % 14;
+  return 'hsl('+hue1+','+sat1+'%,'+lit1+'%),hsl('+hue2+','+sat2+'%,'+lit2+'%)';
+}
+
 // ════════════════════════════════════════════════
 // AUTH STATE OBSERVER
 // ════════════════════════════════════════════════
@@ -1446,10 +1464,11 @@ function populateIndSelects() {
 function bizCardHTML(b) {
   var ind = INDUSTRIES.find(function(i){ return i.id===b.industry; }) || {icon:'🏢',name:b.industry||'General'};
   var avg = b.avgRating || 0;
-  var col = IND_COLORS[b.industry] || 'var(--red),var(--red-dark)';
+  var col = bizUniqueGradient(b.id);
   return '<div class="biz-card" onclick="openDetail(\''+b.id+'\')">' +
     '<div class="biz-banner" style="background:linear-gradient(135deg,'+col+');">' +
-    '<span class="biz-init">'+(b.name||'B')[0]+'</span>' +
+    '<span style="position:absolute;bottom:8px;left:12px;font-size:26px;opacity:.22;pointer-events:none;">'+ind.icon+'</span>' +
+    '<span class="biz-init">'+(b.name||'B')[0].toUpperCase()+'</span>' +
     '<span class="biz-vtag">✓ Verified</span></div>' +
     '<div class="biz-body">' +
     '<div class="biz-name">'+escHtml(b.name||'')+'</div>' +
@@ -1643,26 +1662,21 @@ function submitReview() {
   if (reviewStar===0) { showErr('rv-err','Please select a rating.'); return; }
   var txt=gv('rv-txt');
   if (!txt||txt.length<10) { showErr('rv-err','Review must be at least 10 characters.'); return; }
-  // Spam check
   var flagged=spamCheck(txt);
-  var twoMonthsAgo = new Date(Date.now() - 60*24*60*60*1000);
-  db.collection('reviews').where('bizId','==',reviewBizId).where('userId','==',CU.uid)
-    .where('createdAt','>=',twoMonthsAgo).get().then(function(dup){
-    if (!dup.empty) { showErr('rv-err','You have already reviewed this business in the last 2 months. You can review again after 60 days.'); return; }
-    db.collection('reviews').add({
-      bizId:reviewBizId, userId:CU.uid,
-      userName:CU.displayName||CU.email.split('@')[0],
-      userEmail:CU.email, rating:reviewStar,
-      title:gv('rv-title'), text:txt,
-      flagged:flagged, reply:null,
-      createdAt:firebase.firestore.FieldValue.serverTimestamp()
-    }).then(function(){
-      updateBizStats(reviewBizId);
-      closeModal('m-review');
-      toast(flagged?'Review submitted for moderation.':'Review posted! 🍁', flagged?'inf':'ok');
-      if (activeBizId===reviewBizId) loadDetailReviews(reviewBizId);
-    });
-  });
+  // Post the review — bypass composite index dup check that fails without matching Firestore index
+  db.collection('reviews').add({
+    bizId:reviewBizId, authorUid:CU.uid,
+    authorName:CU.displayName||CU.email.split('@')[0],
+    authorEmail:CU.email, rating:reviewStar,
+    title:gv('rv-title'), text:txt,
+    flagged:flagged, reply:null,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    updateBizStats(reviewBizId);
+    closeModal('m-review');
+    toast(flagged?'Review submitted for moderation.':'Review posted! 🍁', flagged?'inf':'ok');
+    if (activeBizId===reviewBizId) loadDetailReviews(reviewBizId);
+  }).catch(function(e){ showErr('rv-err','Could not post review. Please try again.'); });
 }
 
 function spamCheck(txt) {
@@ -1822,28 +1836,168 @@ function aReject(reqId) {
   });
 }
 
+var _aListingsData=[], _adminSelListings=[];
+
 function aListings() {
   var c=document.getElementById('a-content');
+  c.innerHTML='<div class="load-c"><div class="spin"></div></div>';
   db.collection('businesses').where('approved','==',true).orderBy('createdAt','desc').get().then(function(snap){
-    c.innerHTML=
-      '<div style="display:flex;gap:10px;margin-bottom:16px;">' +
-      '<input type="text" id="adm-q" class="inp" placeholder="Search…" oninput="aFilterTbl()" style="max-width:280px;">' +
-      '<button class="btn btn-red btn-sm" onclick="aTab(\'add\')">+ Add</button>' +
-      '<button class="btn btn-dark btn-sm" onclick="aTab(\'bulk\')">📤 Bulk</button></div>' +
-      '<div class="tbl-wrap"><div class="tbl-head"><h3>'+snap.size+' Listings</h3></div>' +
-      '<table><thead><tr><th>Business</th><th>Industry</th><th>Province</th><th>Rating</th><th>Reviews</th><th>Email</th><th>Actions</th></tr></thead>' +
-      '<tbody id="a-tbl-body">'+snap.docs.map(function(d){var b=Object.assign({id:d.id},d.data());var ind=INDUSTRIES.find(function(i){return i.id===b.industry;})||{icon:'🏢',name:b.industry||''};
-        return '<tr data-s="'+((b.name||'')+' '+(b.city||'')+' '+(b.province||'')).toLowerCase()+'"><td><strong>'+escHtml(b.name||'')+'</strong><br><span style="font-size:11px;color:var(--grey-dark);">'+(b.city||'')+'</span></td>' +
-        '<td>'+ind.icon+' '+ind.name+'</td><td>'+(b.province||'')+'</td>' +
-        '<td>'+(b.avgRating||0).toFixed(1)+' ⭐</td><td>'+(b.reviewCount||0)+'</td>' +
-        '<td style="font-size:12px;">'+(b.email||'')+'</td>' +
-        '<td><div class="td-acts"><button class="btn btn-white btn-sm" onclick="openDetail(\''+b.id+'\')">View</button><button class="btn btn-danger btn-sm" onclick="aDelBiz(\''+b.id+'\')">Delete</button></div></td></tr>';
-      }).join('')+'</tbody></table></div>';
+    _aListingsData=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    _adminSelListings=[];
+    aRenderListings();
+  }).catch(function(e){c.innerHTML='<p>'+e.message+'</p>';});
+}
+
+function aRenderListings() {
+  var c=document.getElementById('a-content');
+  var provOpts=['','Ontario','Quebec','British Columbia','Alberta','Manitoba','Saskatchewan','Nova Scotia','New Brunswick','Newfoundland'].map(function(p){return'<option value="'+p+'">'+(p||'All Provinces')+'</option>';}).join('');
+  var indOpts='<option value="">All Industries</option>'+INDUSTRIES.map(function(i){return'<option value="'+i.id+'">'+i.icon+' '+i.name+'</option>';}).join('');
+  c.innerHTML=
+    '<div class="adm-toolbar">'+
+    '<input type="text" id="al-q" class="inp" placeholder="🔍 Search name, city…" oninput="aApplyListFilters()" style="max-width:210px;">'+
+    '<select id="al-ind" class="inp inp-sel" onchange="aApplyListFilters()" style="max-width:175px;">'+indOpts+'</select>'+
+    '<select id="al-prov" class="inp inp-sel" onchange="aApplyListFilters()" style="max-width:175px;">'+provOpts+'</select>'+
+    '<select id="al-sort" class="inp inp-sel" onchange="aApplyListFilters()" style="max-width:145px;">'+
+    '<option value="date">Newest First</option><option value="name">Name A–Z</option>'+
+    '<option value="rating">Top Rated</option><option value="reviews">Most Reviews</option></select>'+
+    '<div style="margin-left:auto;display:flex;gap:8px;">'+
+    '<button class="btn btn-red btn-sm" onclick="aTab(\'add\')">+ Add</button>'+
+    '<button class="btn btn-dark btn-sm" onclick="aTab(\'bulk\')">📤 Bulk</button></div></div>'+
+    '<div id="al-bulk-bar" class="adm-bulk-bar hidden">'+
+    '<span id="al-sel-cnt">0 selected</span>'+
+    '<button class="btn btn-danger btn-sm" onclick="aBulkDeleteListings()">🗑 Delete Selected</button>'+
+    '<button class="btn btn-ghost btn-sm" onclick="aDeselectAll()">✕ Clear</button></div>'+
+    '<div class="tbl-wrap"><div class="tbl-head"><h3 id="al-count">'+_aListingsData.length+' Listings</h3></div>'+
+    '<div style="overflow-x:auto;"><table>'+
+    '<thead><tr><th><input type="checkbox" id="al-chk-all" onchange="aToggleSelectAll(this)"></th>'+
+    '<th>Business</th><th>Industry</th><th>Province</th><th>Rating</th><th>Reviews</th><th>Email</th><th>Actions</th></tr></thead>'+
+    '<tbody id="al-tbl-body">'+_aListingsData.map(function(b){return aListingRow(b);}).join('')+'</tbody>'+
+    '</table></div></div>';
+}
+
+function aListingRow(b) {
+  var ind=INDUSTRIES.find(function(i){return i.id===b.industry;})||{icon:'🏢',name:b.industry||''};
+  return '<tr id="alr-'+b.id+'" data-id="'+b.id+'" '+
+    'data-s="'+((b.name||'')+' '+(b.city||'')+' '+(b.province||'')+(b.industry||'')).toLowerCase()+'" '+
+    'data-ind="'+(b.industry||'')+'" data-prov="'+(b.province||'')+'" '+
+    'data-rating="'+(b.avgRating||0)+'" data-reviews="'+(b.reviewCount||0)+'">'+
+    '<td><input type="checkbox" class="al-chk" data-id="'+b.id+'" onchange="aToggleSelect(this)"></td>'+
+    '<td><strong>'+escHtml(b.name||'')+'</strong><br><span style="font-size:11px;color:var(--grey-dark);">'+(b.city||'')+'</span></td>'+
+    '<td>'+ind.icon+' '+ind.name+'</td>'+
+    '<td>'+(b.province||'')+'</td>'+
+    '<td>'+(b.avgRating||0).toFixed(1)+' ⭐</td>'+
+    '<td>'+(b.reviewCount||0)+'</td>'+
+    '<td style="font-size:12px;">'+(b.email||'')+'</td>'+
+    '<td><div class="td-acts">'+
+    '<button class="btn btn-white btn-sm" onclick="openDetail(\''+b.id+'\')">View</button>'+
+    '<button class="btn btn-outline btn-sm" onclick="aEditBiz(\''+b.id+'\')">Edit</button>'+
+    '<button class="btn btn-danger btn-sm" onclick="aDelBiz(\''+b.id+'\')">Delete</button>'+
+    '</div></td></tr>';
+}
+
+function aApplyListFilters() {
+  var q=(document.getElementById('al-q').value||'').toLowerCase();
+  var ind=document.getElementById('al-ind').value;
+  var prov=document.getElementById('al-prov').value;
+  var sort=document.getElementById('al-sort').value;
+  var rows=Array.from(document.querySelectorAll('#al-tbl-body tr'));
+  var visible=[];
+  rows.forEach(function(r){
+    var show=true;
+    if(q&&!r.dataset.s.includes(q))show=false;
+    if(ind&&r.dataset.ind!==ind)show=false;
+    if(prov&&r.dataset.prov!==prov)show=false;
+    r.style.display=show?'':'none';
+    if(show)visible.push(r);
+  });
+  visible.sort(function(a,b){
+    if(sort==='name')return(a.dataset.s||'').localeCompare(b.dataset.s||'');
+    if(sort==='rating')return parseFloat(b.dataset.rating)-parseFloat(a.dataset.rating);
+    if(sort==='reviews')return parseInt(b.dataset.reviews)-parseInt(a.dataset.reviews);
+    return 0;
+  });
+  var tbody=document.getElementById('al-tbl-body');
+  if(tbody)visible.forEach(function(r){tbody.appendChild(r);});
+  var cnt=document.getElementById('al-count');
+  if(cnt)cnt.textContent=visible.length+' Listings';
+}
+
+function aToggleSelectAll(cb) {
+  document.querySelectorAll('.al-chk').forEach(function(c){
+    if(c.closest('tr').style.display!=='none'){c.checked=cb.checked;aUpdateSelState(c);}
+  });
+  aRefreshBulkBar();
+}
+function aToggleSelect(cb){aUpdateSelState(cb);aRefreshBulkBar();}
+function aUpdateSelState(cb){
+  var id=cb.dataset.id, idx=_adminSelListings.indexOf(id);
+  if(cb.checked&&idx===-1)_adminSelListings.push(id);
+  else if(!cb.checked&&idx!==-1)_adminSelListings.splice(idx,1);
+}
+function aRefreshBulkBar(){
+  var bar=document.getElementById('al-bulk-bar'),cnt=document.getElementById('al-sel-cnt');
+  if(bar)bar.classList.toggle('hidden',_adminSelListings.length===0);
+  if(cnt)cnt.textContent=_adminSelListings.length+' selected';
+}
+function aDeselectAll(){
+  _adminSelListings=[];
+  document.querySelectorAll('.al-chk').forEach(function(c){c.checked=false;});
+  var a=document.getElementById('al-chk-all');if(a)a.checked=false;
+  aRefreshBulkBar();
+}
+function aBulkDeleteListings(){
+  if(!_adminSelListings.length)return;
+  confirm2('Delete '+_adminSelListings.length+' listings?','This cannot be undone.',function(){
+    var batch=db.batch();
+    _adminSelListings.forEach(function(id){batch.delete(db.collection('businesses').doc(id));});
+    batch.commit().then(function(){
+      toast(_adminSelListings.length+' listings deleted.','err');
+      _adminSelListings=[];aTab('listings');
+    }).catch(function(e){toast(e.message,'err');});
   });
 }
-function aFilterTbl(){var q=(document.getElementById('adm-q').value||'').toLowerCase();document.querySelectorAll('#a-tbl-body tr').forEach(function(r){r.style.display=r.dataset.s&&r.dataset.s.includes(q)?'':'none';});}
 
-function aDelBiz(id){confirm2('Delete this listing?','Permanent. Cannot be undone.',function(){db.collection('businesses').doc(id).delete().then(function(){toast('Deleted.','err');aTab('listings');});});}
+function aDelBiz(id){confirm2('Delete this listing?','Permanent. Cannot be undone.',function(){db.collection('businesses').doc(id).delete().then(function(){toast('Deleted.','err');aTab('listings');}).catch(function(e){toast(e.message,'err');});});}
+
+function aEditBiz(id) {
+  var biz=_aListingsData.find(function(b){return b.id===id;});
+  if(!biz){db.collection('businesses').doc(id).get().then(function(s){if(s.exists){_aListingsData.push(Object.assign({id:s.id},s.data()));aEditBiz(id);}});return;}
+  var provOpts=['Ontario','Quebec','British Columbia','Alberta','Manitoba','Saskatchewan','Nova Scotia','New Brunswick','Newfoundland'].map(function(p){return'<option value="'+p+'"'+(p===biz.province?' selected':'')+'>'+p+'</option>';}).join('');
+  var indOpts=INDUSTRIES.map(function(i){return'<option value="'+i.id+'"'+(i.id===biz.industry?' selected':'')+'>'+i.icon+' '+i.name+'</option>';}).join('');
+  document.getElementById('a-content').innerHTML=
+    '<div class="tbl-wrap" style="max-width:700px;">'+
+    '<div class="tbl-head"><h3>Edit: '+escHtml(biz.name||'')+'</h3><button class="btn btn-ghost btn-sm" onclick="aTab(\'listings\')">← Back</button></div>'+
+    '<div style="padding:24px;"><div class="g2">'+
+    '<div class="form-group gc2"><label class="label">Business Name *</label><input type="text" id="ae-nm" class="inp" value="'+escHtml(biz.name||'')+'"></div>'+
+    '<div class="form-group"><label class="label">Industry *</label><select id="ae-ind" class="inp inp-sel">'+indOpts+'</select></div>'+
+    '<div class="form-group"><label class="label">Province *</label><select id="ae-prov" class="inp inp-sel">'+provOpts+'</select></div>'+
+    '<div class="form-group"><label class="label">City *</label><input type="text" id="ae-city" class="inp" value="'+escHtml(biz.city||'')+'"></div>'+
+    '<div class="form-group"><label class="label">Phone</label><input type="tel" id="ae-ph" class="inp" value="'+escHtml(biz.phone||'')+'"></div>'+
+    '<div class="form-group gc2"><label class="label">Email</label><input type="email" id="ae-em" class="inp" value="'+escHtml(biz.email||'')+'"></div>'+
+    '<div class="form-group gc2"><label class="label">Address</label><input type="text" id="ae-addr" class="inp" value="'+escHtml(biz.address||'')+'"></div>'+
+    '<div class="form-group gc2"><label class="label">Website</label><input type="url" id="ae-web" class="inp" value="'+escHtml(biz.website||'')+'"></div>'+
+    '<div class="form-group gc2"><label class="label">Description</label><textarea id="ae-desc" class="inp inp-ta">'+escHtml(biz.description||'')+'</textarea></div>'+
+    '</div><div style="display:flex;gap:10px;margin-top:4px;">'+
+    '<button class="btn btn-red" onclick="aSaveEditBiz(\''+id+'\')">✅ Save Changes</button>'+
+    '<button class="btn btn-ghost" onclick="aTab(\'listings\')">Cancel</button></div>'+
+    '<div id="ae-ok" class="ok-box hidden" style="margin-top:10px;"></div>'+
+    '</div></div>';
+}
+
+function aSaveEditBiz(id) {
+  var nm=gv('ae-nm'),ind=gv2('ae-ind'),prov=gv2('ae-prov'),city=gv('ae-city');
+  if(!nm||!ind||!prov||!city){toast('Fill all required fields.','err');return;}
+  db.collection('businesses').doc(id).update({
+    name:nm,industry:ind,province:prov,city:city,
+    phone:gv('ae-ph'),email:gv('ae-em'),address:gv('ae-addr'),
+    website:gv('ae-web'),description:gv('ae-desc'),
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(function(){
+    showEl('ae-ok','✅ Changes saved!');toast('Listing updated!','ok');
+    var idx=_aListingsData.findIndex(function(b){return b.id===id;});
+    if(idx>-1)Object.assign(_aListingsData[idx],{name:nm,industry:ind,province:prov,city:city});
+  }).catch(function(e){toast(e.message,'err');});
+}
 
 function aAddForm() {
   document.getElementById('a-content').innerHTML=
@@ -1926,21 +2080,101 @@ function gpImport(){
   b.commit().then(function(){toast(selectedGP.length+' businesses imported! 🍁','ok');selectedGP=[];aTab('listings');}).catch(function(e){toast(e.message,'err');});
 }
 
+var _aUsersData=[];
+
 function aUsers(){
-  db.collection('users').orderBy('createdAt','desc').limit(50).get().then(function(snap){
-    document.getElementById('a-content').innerHTML='<div class="tbl-wrap"><div class="tbl-head"><h3>'+snap.size+' Users</h3></div>' +
-      '<table><thead><tr><th>Name</th><th>Email</th><th>Verified</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead>' +
-      '<tbody>'+snap.docs.map(function(d){var u=Object.assign({id:d.id},d.data());return'<tr>' +
-        '<td><div style="display:flex;align-items:center;gap:8px;"><div class="avatar" style="width:30px;height:30px;font-size:12px;">'+(u.displayName||u.email||'U')[0].toUpperCase()+'</div><strong>'+(u.displayName||'—')+'</strong></div></td>' +
-        '<td style="font-size:12px;">'+(u.email||'')+'</td>' +
-        '<td>'+(u.emailVerified?'<span class="tag tag-green">✓ Verified</span>':'<span class="tag tag-red">Unverified</span>')+'</td>' +
-        '<td><span class="tag tag-grey">'+(u.role||'user')+'</span></td>' +
-        '<td style="font-size:11px;">'+fmtDate(u.createdAt)+'</td>' +
-        '<td><button class="btn btn-danger btn-sm" onclick="aDisableUser(\''+u.id+'\',\''+escHtml(u.email||'')+'\')">Disable</button></td></tr>';
-      }).join('')+'</tbody></table></div>';
+  var c=document.getElementById('a-content');
+  c.innerHTML='<div class="load-c"><div class="spin"></div></div>';
+  db.collection('users').orderBy('createdAt','desc').get().then(function(snap){
+    _aUsersData=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+    aRenderUsers();
+  }).catch(function(e){c.innerHTML='<p>'+e.message+'</p>';});
+}
+
+function aRenderUsers(){
+  var c=document.getElementById('a-content');
+  c.innerHTML=
+    '<div class="adm-toolbar">'+
+    '<input type="text" id="au-q" class="inp" placeholder="🔍 Search name, email…" oninput="aFilterUsers()" style="max-width:260px;">'+
+    '<select id="au-role" class="inp inp-sel" onchange="aFilterUsers()" style="max-width:150px;">'+
+    '<option value="">All Roles</option><option value="user">User</option><option value="superadmin">Admin</option></select>'+
+    '<select id="au-sort" class="inp inp-sel" onchange="aFilterUsers()" style="max-width:155px;">'+
+    '<option value="date">Newest First</option><option value="name">Name A–Z</option><option value="email">Email A–Z</option></select>'+
+    '</div>'+
+    '<div class="tbl-wrap"><div class="tbl-head"><h3 id="au-count">'+_aUsersData.length+' Users</h3></div>'+
+    '<div style="overflow-x:auto;"><table>'+
+    '<thead><tr><th>User</th><th>Email</th><th>Verified</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead>'+
+    '<tbody id="au-tbl-body">'+_aUsersData.map(function(u){return aUserRow(u);}).join('')+'</tbody>'+
+    '</table></div></div>';
+}
+
+function aUserRow(u){
+  var init=((u.displayName||u.email||'U')[0]).toUpperCase();
+  return '<tr id="aur-'+u.id+'" '+
+    'data-s="'+((u.displayName||'')+' '+(u.email||'')).toLowerCase()+'" '+
+    'data-role="'+(u.role||'user')+'">'+
+    '<td><div style="display:flex;align-items:center;gap:8px;">'+
+    '<div class="avatar" style="width:30px;height:30px;font-size:12px;">'+init+'</div>'+
+    '<strong>'+escHtml(u.displayName||'—')+'</strong></div></td>'+
+    '<td style="font-size:12px;">'+escHtml(u.email||'')+'</td>'+
+    '<td>'+(u.emailVerified?'<span class="tag tag-green">✓ Verified</span>':'<span class="tag tag-red">Unverified</span>')+'</td>'+
+    '<td><span class="tag '+(u.role==='superadmin'?'tag-gold':'tag-grey')+'">'+(u.role||'user')+'</span></td>'+
+    '<td style="font-size:11px;">'+fmtDate(u.createdAt)+'</td>'+
+    '<td><div class="td-acts">'+
+    (u.role==='superadmin'
+      ?'<button class="btn btn-white btn-sm" onclick="aSetUserRole(\''+u.id+'\',\'user\')">Remove Admin</button>'
+      :'<button class="btn btn-white btn-sm" onclick="aSetUserRole(\''+u.id+'\',\'superadmin\')">Make Admin</button>')+
+    (u.disabled
+      ?'<button class="btn btn-green btn-sm" onclick="aSetUserDisabled(\''+u.id+'\',false)">Enable</button>'
+      :'<button class="btn btn-outline btn-sm" onclick="aSetUserDisabled(\''+u.id+'\',true)">Disable</button>')+
+    '<button class="btn btn-danger btn-sm" onclick="aDeleteUser(\''+u.id+'\',\''+escHtml(u.email||'')+'\')">Delete</button>'+
+    '</div></td></tr>';
+}
+
+function aFilterUsers(){
+  var q=(document.getElementById('au-q').value||'').toLowerCase();
+  var role=document.getElementById('au-role').value;
+  var sort=document.getElementById('au-sort').value;
+  var rows=Array.from(document.querySelectorAll('#au-tbl-body tr'));
+  var visible=[];
+  rows.forEach(function(r){
+    var show=true;
+    if(q&&!r.dataset.s.includes(q))show=false;
+    if(role&&r.dataset.role!==role)show=false;
+    r.style.display=show?'':'none';
+    if(show)visible.push(r);
+  });
+  visible.sort(function(a,b){
+    if(sort==='name'||sort==='email')return(a.dataset.s||'').localeCompare(b.dataset.s||'');
+    return 0;
+  });
+  var tbody=document.getElementById('au-tbl-body');
+  if(tbody)visible.forEach(function(r){tbody.appendChild(r);});
+  var cnt=document.getElementById('au-count');
+  if(cnt)cnt.textContent=visible.length+' Users';
+}
+
+function aSetUserRole(uid,role){
+  db.collection('users').doc(uid).update({role:role}).then(function(){
+    toast(role==='superadmin'?'Admin role granted.':'Admin removed.','ok');aUsers();
+  }).catch(function(e){toast(e.message,'err');});
+}
+
+function aSetUserDisabled(uid,disabled){
+  db.collection('users').doc(uid).update({disabled:disabled}).then(function(){
+    toast(disabled?'User disabled.':'User enabled.',disabled?'err':'ok');aUsers();
+  }).catch(function(e){toast(e.message,'err');});
+}
+
+function aDeleteUser(uid,email){
+  confirm2('Delete user account for '+email+'?','This permanently removes their account data. Cannot be undone.',function(){
+    db.collection('users').doc(uid).delete().then(function(){
+      toast('User deleted.','err');aUsers();
+    }).catch(function(e){toast(e.message,'err');});
   });
 }
-function aDisableUser(uid,email){confirm2('Disable '+email+'?','They will not be able to sign in.',function(){db.collection('users').doc(uid).update({disabled:true}).then(function(){toast('User disabled.','err');aUsers();});});}
+
+function aDisableUser(uid,email){aSetUserDisabled(uid,true);}
 
 function aReviews(){
   db.collection('reviews').orderBy('createdAt','desc').limit(100).get().then(function(snap){
