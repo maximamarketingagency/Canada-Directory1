@@ -276,6 +276,16 @@ tbody tr:hover td{background:#FAFAF8;}
 .adm-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;}
 .adm-bulk-bar{display:flex;align-items:center;gap:10px;background:#FFF8E7;border:1.5px solid #F5C842;border-radius:var(--r);padding:10px 16px;margin-bottom:12px;font-size:13px;font-weight:600;color:#7A5900;}
 
+/* ── BULK IMPORT UI ── */
+.bulk-summary{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px;}
+.bulk-ok-badge{background:#E8F5E9;color:#1B5E20;padding:5px 13px;border-radius:999px;font-size:13px;font-weight:700;}
+.bulk-err-badge{background:#FFEBEE;color:#B71C1C;padding:5px 13px;border-radius:999px;font-size:13px;font-weight:700;}
+.bulk-warn-box{background:#FFF8E1;border:1.5px solid #FFD54F;border-radius:10px;padding:11px 15px;font-size:13px;color:#5D4037;}
+.bulk-tbl{width:100%;border-collapse:collapse;}
+.bulk-tbl thead th{background:#F5F3EF;padding:9px 10px;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--grey-dark);text-align:left;}
+.bulk-tbl tbody td{padding:7px 8px;border-bottom:1px solid #F0EDE8;vertical-align:middle;}
+.bulk-tbl tbody tr:hover td{background:rgba(0,0,0,.02);}
+
 /* ── HAMBURGER ── */
 .hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;flex-direction:column;gap:4px;justify-content:center;}
 .hamburger span{display:block;width:22px;height:2px;background:var(--black);border-radius:2px;transition:all .2s;}
@@ -2023,24 +2033,197 @@ function aSaveListing(){
   }).catch(function(e){toast(e.message,'err');});
 }
 
+var _bulkRows=[];
+
 function aBulk(){
   document.getElementById('a-content').innerHTML=
-    '<div class="tbl-wrap" style="max-width:760px;"><div class="tbl-head"><h3>Bulk Import</h3></div><div style="padding:24px;">' +
-    '<p style="color:var(--grey-dark);font-size:13px;margin-bottom:16px;">CSV format: <code>Name, Phone, Email, Address, Industry ID, Province, City, Website, Description</code></p>' +
-    '<div class="uzone" onclick="document.getElementById(\'csv-f\').click()">' +
-    '<div style="font-size:36px;margin-bottom:10px;">📁</div>' +
-    '<p style="font-weight:700;margin-bottom:4px;">Click to upload CSV file</p>' +
-    '<p style="font-size:13px;color:var(--grey-dark);">or paste data below</p>' +
-    '<input type="file" id="csv-f" accept=".csv" style="display:none;" onchange="loadCSV(event)"></div>' +
-    '<textarea id="bulk-d" class="inp inp-ta" style="margin-top:14px;height:160px;font-family:monospace;font-size:12px;" placeholder="Tim\'s Bakery, 416-555-0101, tims@email.com, 123 Main St, restaurants, Ontario, Toronto, https://tims.ca, Artisan bakery"></textarea>' +
-    '<div style="display:flex;gap:10px;margin-top:14px;">' +
-    '<button class="btn btn-white" onclick="previewBulk()">Preview</button>' +
-    '<button class="btn btn-red" onclick="uploadBulk()">✅ Upload All</button></div>' +
-    '<div id="bulk-prev" style="margin-top:16px;"></div></div></div>';
+    '<div class="tbl-wrap" style="max-width:980px;">'+
+    '<div class="tbl-head"><h3>📤 Bulk Import</h3></div>'+
+    '<div style="padding:24px;">'+
+    '<div style="background:#F5F3EF;border-radius:10px;padding:13px 16px;margin-bottom:16px;font-size:13px;line-height:1.8;">'+
+    '<strong>CSV Column Order:</strong> <code>Name, Phone, Email, Address, Industry, Province, City, Website, Description</code><br>'+
+    '<span style="color:var(--grey-dark);">Industry can be a plain word (e.g. <code>restaurant</code>, <code>plumber</code>, <code>hair salon</code>) — it will be auto-detected. '+
+    'Rows where industry cannot be detected will be flagged so you can fix them before uploading.</span>'+
+    '</div>'+
+    '<div class="uzone" onclick="document.getElementById(\'csv-f\').click()" '+
+    'ondragover="event.preventDefault();this.style.borderColor=\'var(--red)\'" '+
+    'ondragleave="this.style.borderColor=\'\'" '+
+    'ondrop="bulkDrop(event)">'+
+    '<div style="font-size:36px;margin-bottom:8px;">📁</div>'+
+    '<p style="font-weight:700;margin-bottom:3px;">Click to upload CSV, or drag & drop</p>'+
+    '<p style="font-size:12px;color:var(--grey-dark);">or paste raw CSV text in the box below</p>'+
+    '<input type="file" id="csv-f" accept=".csv,.txt" style="display:none;" onchange="loadCSV(event)"></div>'+
+    '<textarea id="bulk-d" class="inp inp-ta" style="margin-top:12px;height:110px;font-family:monospace;font-size:12px;" '+
+    'placeholder="Tim\'s Bakery, 416-555-0101, tims@email.com, 123 Main St, restaurants, Ontario, Toronto, https://tims.ca, Artisan bakery&#10;John Law Office, 613-555-0202, john@law.ca, 456 King St, lawyer, Ontario, Ottawa,,"></textarea>'+
+    '<div style="display:flex;gap:10px;margin-top:12px;">'+
+    '<button class="btn btn-dark" onclick="parseBulkPreview()">🔍 Parse & Preview</button>'+
+    '<button class="btn btn-ghost btn-sm" onclick="setVal(\'bulk-d\',\'\');document.getElementById(\'bulk-prev\').innerHTML=\'\'">Clear</button>'+
+    '</div>'+
+    '<div id="bulk-prev" style="margin-top:22px;"></div>'+
+    '</div></div>';
+  _bulkRows=[];
 }
-function loadCSV(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){setVal('bulk-d',ev.target.result);};r.readAsText(f);}
-function previewBulk(){var rows=(gv('bulk-d')||'').split('\n').filter(function(l){return l.trim();});var p=document.getElementById('bulk-prev');if(!rows.length){p.innerHTML='';return;}p.innerHTML='<div class="tbl-wrap"><div class="tbl-head"><h3>Preview: '+rows.length+' listings</h3></div><table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Industry</th><th>Province</th><th>City</th></tr></thead><tbody>'+rows.map(function(r){var c=r.split(',').map(function(s){return s.trim();});return'<tr><td>'+c[0]+'</td><td>'+c[1]+'</td><td>'+c[2]+'</td><td>'+c[4]+'</td><td>'+c[5]+'</td><td>'+c[6]+'</td></tr>';}).join('')+'</tbody></table></div>';}
-function uploadBulk(){var rows=(gv('bulk-d')||'').split('\n').filter(function(l){return l.trim();});if(!rows.length){toast('No data.','err');return;}var b=db.batch();rows.forEach(function(r){var c=r.split(',').map(function(s){return s.trim();});var ref=db.collection('businesses').doc();b.set(ref,{name:c[0]||'',phone:c[1]||'',email:c[2]||'',address:c[3]||'',industry:c[4]||'',province:c[5]||'',city:c[6]||'',website:c[7]||'',description:c[8]||'',approved:true,avgRating:0,reviewCount:0,createdAt:firebase.firestore.FieldValue.serverTimestamp()});});b.commit().then(function(){toast(rows.length+' listings uploaded! 🍁','ok');aTab('listings');}).catch(function(e){toast(e.message,'err');});}
+
+function bulkDrop(e){
+  e.preventDefault();
+  e.currentTarget.style.borderColor='';
+  var f=e.dataTransfer.files[0]; if(!f)return;
+  var r=new FileReader();
+  r.onload=function(ev){setVal('bulk-d',ev.target.result);parseBulkPreview();};
+  r.readAsText(f);
+}
+
+function loadCSV(e){
+  var f=e.target.files[0]; if(!f)return;
+  var r=new FileReader();
+  r.onload=function(ev){setVal('bulk-d',ev.target.result);parseBulkPreview();};
+  r.readAsText(f);
+}
+
+function parseCSVLine(line){
+  var result=[],cur='',inQ=false;
+  for(var i=0;i<line.length;i++){
+    var ch=line[i];
+    if(ch==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else{inQ=!inQ;}}
+    else if(ch===','&&!inQ){result.push(cur.trim());cur='';}
+    else{cur+=ch;}
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function detectIndustry(rawText){
+  if(!rawText)return'';
+  var t=rawText.toLowerCase().trim();
+  // Direct ID match
+  if(INDUSTRIES.find(function(i){return i.id===t;}))return t;
+  var kw={
+    restaurants:['restaurant','food','cafe','coffee','bakery','pizza','sushi','bar & grill','grill','diner','bistro','kitchen','eatery','cuisine','takeout','catering','burger','seafood','steakhouse','pub','brewery','winery','buffet'],
+    health:['health','medical','clinic','doctor','hospital','dental','pharmacy','physio','physiotherapy','therapy','chiro','chiropractor','naturo','naturopath','optom','optician','nurse','nursing','wellness','rehab'],
+    legal:['law','legal','lawyer','attorney','notary','paralegal','barrister','solicitor','litigation','counsel','criminal defence','family law','immigration'],
+    'real-estate':['real estate','realtor','property','realty','mortgage','condo','homes','housing','brokerage','apprais'],
+    auto:['auto','car','vehicle','tire','mechanic','garage','collision','towing','dealership','motor','oil change','detail','windshield','transmission','brake'],
+    retail:['retail','store','shop','boutique','clothing','fashion','apparel','gifts','market','grocery','hardware','furniture','florist','jewellery','jewelry'],
+    tech:['tech','software','it ','i.t.','computer','web design','digital','app','network','cyber','data','cloud','developer','saas','hosting','telecom'],
+    finance:['finance','bank','insurance','accounting','accountant','tax','financial','investment','credit','wealth','bookkeep','payroll','audit','mortgage broker'],
+    education:['school','education','tutor','tutoring','learning','training','college','academy','childcare','daycare','preschool','montessori','music lesson','driving school','language'],
+    construction:['construct','contractor','plumb','plumber','electrical','electri','roofing','renovation','painting','painter','flooring','hvac','landscap','handyman','drain','masonry','carpentry','cement','concrete','drywall'],
+    beauty:['hair','salon','spa','beauty','nail','barber','esthetic','massage','skincare','makeup','wax','lash','tanning','tattoo','piercing'],
+    pets:['pet','vet ','veterinary','veterinarian','grooming','groomer','kennel','animal','dog','cat','aquatic','bird'],
+    entertainment:['entertainment','event','music','art','gallery','theatre','cinema','sport','recreation','gym','fitness','yoga','dance','bowling','escape room','gaming'],
+    travel:['travel','hotel','motel','lodge','airbnb','tourism','tour','transportation','logistics','moving','storage','courier','taxi','limo','bus']
+  };
+  for(var ind in kw){
+    if(kw[ind].some(function(k){return t.includes(k);}))return ind;
+  }
+  return'';
+}
+
+function parseBulkPreview(){
+  var raw=(gv('bulk-d')||'');
+  var lines=raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  var p=document.getElementById('bulk-prev');
+  if(!lines.length){p.innerHTML='<p style="color:var(--grey-dark);">No data found.</p>';return;}
+  // Skip header row
+  var first=parseCSVLine(lines[0]);
+  if(first[0]&&/^(name|business|company|biz)/i.test(first[0]))lines=lines.slice(1);
+  if(!lines.length){p.innerHTML='<p style="color:var(--grey-dark);">Only a header row was found.</p>';return;}
+  _bulkRows=lines.map(function(line,idx){
+    var c=parseCSVLine(line);
+    var rawInd=(c[4]||'').trim();
+    // Try to detect from industry column first, then fall back to name+description
+    var detInd=detectIndustry(rawInd)||detectIndustry((c[0]||'')+' '+(c[8]||''));
+    return{_idx:idx,name:c[0]||'',phone:c[1]||'',email:c[2]||'',address:c[3]||'',
+      industry:detInd,rawIndustry:rawInd,province:c[5]||'',city:c[6]||'',
+      website:c[7]||'',description:c[8]||''};
+  });
+  renderBulkPreview();
+}
+
+function renderBulkPreview(){
+  var p=document.getElementById('bulk-prev');
+  var ready=_bulkRows.filter(function(r){return r.industry&&r.name;}).length;
+  var errors=_bulkRows.filter(function(r){return!r.industry||!r.name;}).length;
+  var provOpts=['','Ontario','Quebec','British Columbia','Alberta','Manitoba','Saskatchewan','Nova Scotia','New Brunswick','Newfoundland'];
+  var indOptsBase='<option value="">— select industry —</option>'+INDUSTRIES.map(function(i){return'<option value="'+i.id+'">'+i.icon+' '+i.name+'</option>';}).join('');
+
+  p.innerHTML=
+    '<div class="bulk-summary">'+
+    '<span class="bulk-ok-badge">✅ '+ready+' ready to upload</span>'+
+    (errors?'<span class="bulk-err-badge">❌ '+errors+' need fixing</span>':'')+
+    '<button class="btn btn-red" style="margin-left:auto;" onclick="uploadBulk()">Upload '+ready+' Ready Rows →</button>'+
+    '</div>'+
+    (errors?'<div class="bulk-warn-box">⚠️ Rows highlighted in red are missing required data. Fix the <strong>Business Name</strong> and <strong>Industry</strong> fields inline below, then click Upload.</div>':'')+
+    '<div style="overflow-x:auto;margin-top:12px;"><table class="bulk-tbl">'+
+    '<thead><tr><th style="width:28px;">#</th><th>Business Name *</th><th>Industry *</th>'+
+    '<th>Province</th><th>City</th><th>Phone</th><th>Email</th><th style="width:90px;">Status</th></tr></thead>'+
+    '<tbody>'+_bulkRows.map(function(row,i){
+      var hasErr=!row.industry||!row.name;
+      var indOpts=indOptsBase.replace('value="'+row.industry+'"','value="'+row.industry+'" selected');
+      var provOptStr=provOpts.map(function(pv){return'<option value="'+pv+'"'+(pv===row.province?' selected':'')+'>'+( pv||'All Provinces')+'</option>';}).join('');
+      var statusBadge=hasErr
+        ?'<span class="tag tag-red" style="font-size:10px;">❌ '+((!row.name?'name ':'')+((!row.industry)?'industry':''))+'</span>'
+        :'<span class="tag tag-green" style="font-size:10px;">✅ OK</span>';
+      return'<tr id="blkr-'+i+'" style="'+(hasErr?'background:#FFF5F5;':'')+'">' +
+        '<td style="font-size:11px;color:var(--grey-dark);text-align:center;">'+(i+1)+'</td>'+
+        '<td><input class="inp" style="width:100%;min-width:140px;padding:4px 7px;font-size:12px;" value="'+escHtml(row.name)+'" oninput="_bulkRows['+i+'].name=this.value;refreshBulkRow('+i+')" placeholder="Business name *"></td>'+
+        '<td><select class="inp inp-sel" style="width:100%;min-width:155px;padding:4px 7px;font-size:12px;" onchange="_bulkRows['+i+'].industry=this.value;refreshBulkRow('+i+')">'+indOpts+'</select>'+
+        (row.rawIndustry&&!row.industry?'<div style="font-size:10px;color:#B71C1C;margin-top:2px;">⚠ Could not detect: "'+escHtml(row.rawIndustry)+'"</div>':'')+
+        '</td>'+
+        '<td><select class="inp inp-sel" style="width:100%;min-width:130px;padding:4px 7px;font-size:12px;" onchange="_bulkRows['+i+'].province=this.value">'+provOptStr+'</select></td>'+
+        '<td><input class="inp" style="min-width:90px;padding:4px 7px;font-size:12px;" value="'+escHtml(row.city)+'" oninput="_bulkRows['+i+'].city=this.value" placeholder="City"></td>'+
+        '<td style="font-size:11px;white-space:nowrap;">'+escHtml(row.phone)+'</td>'+
+        '<td style="font-size:11px;">'+escHtml(row.email)+'</td>'+
+        '<td id="blks-'+i+'">'+statusBadge+'</td>'+
+        '</tr>';
+    }).join('')+
+    '</tbody></table></div>'+
+    '<div style="margin-top:14px;display:flex;gap:10px;align-items:center;">'+
+    '<button class="btn btn-red" onclick="uploadBulk()">Upload '+ready+' Ready Rows →</button>'+
+    '<button class="btn btn-ghost btn-sm" onclick="parseBulkPreview()">↺ Re-parse</button>'+
+    (errors?'<span style="font-size:12px;color:var(--grey-dark);">'+errors+' invalid row(s) will be skipped.</span>':'')+
+    '</div>';
+}
+
+function refreshBulkRow(i){
+  var row=_bulkRows[i];
+  var hasErr=!row.industry||!row.name;
+  var el=document.getElementById('blks-'+i);
+  var tr=document.getElementById('blkr-'+i);
+  if(el)el.innerHTML=hasErr
+    ?'<span class="tag tag-red" style="font-size:10px;">❌ '+((!row.name?'name ':'')+((!row.industry)?'industry':''))+'</span>'
+    :'<span class="tag tag-green" style="font-size:10px;">✅ OK</span>';
+  if(tr)tr.style.background=hasErr?'#FFF5F5':'';
+  var ready=_bulkRows.filter(function(r){return r.industry&&r.name;}).length;
+  document.querySelectorAll('#bulk-prev .btn-red').forEach(function(b){
+    if(b.textContent.includes('Upload'))b.textContent='Upload '+ready+' Ready Rows →';
+  });
+  var errBadge=document.querySelector('#bulk-prev .bulk-err-badge');
+  var errors=_bulkRows.filter(function(r){return!r.industry||!r.name;}).length;
+  if(errBadge)errBadge.textContent='❌ '+errors+' need fixing';
+  var okBadge=document.querySelector('#bulk-prev .bulk-ok-badge');
+  if(okBadge)okBadge.textContent='✅ '+ready+' ready to upload';
+}
+
+function uploadBulk(){
+  if(!_bulkRows.length){toast('Parse the CSV first.','err');return;}
+  var valid=_bulkRows.filter(function(r){return r.industry&&r.name;});
+  var skipped=_bulkRows.length-valid.length;
+  if(!valid.length){toast('No rows are ready — fix the missing industries first.','err');return;}
+  var batch=db.batch();
+  valid.forEach(function(r){
+    var ref=db.collection('businesses').doc();
+    batch.set(ref,{name:r.name,phone:r.phone,email:r.email,address:r.address,
+      industry:r.industry,province:r.province,city:r.city,website:r.website,
+      description:r.description,approved:true,avgRating:0,reviewCount:0,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  });
+  batch.commit().then(function(){
+    var msg=valid.length+' listing'+(valid.length!==1?'s':'')+' uploaded! 🍁';
+    if(skipped)msg+=' ('+skipped+' row'+(skipped!==1?'s':'')+' skipped — missing required fields)';
+    toast(msg,'ok');_bulkRows=[];aTab('listings');
+  }).catch(function(e){toast('Upload failed: '+e.message,'err');});
+}
 
 function aPlaces(){
   document.getElementById('a-content').innerHTML=
