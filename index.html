@@ -2225,42 +2225,151 @@ function uploadBulk(){
   }).catch(function(e){toast('Upload failed: '+e.message,'err');});
 }
 
+var _gpMap=null,_gpService=null;
+function loadGoogleMapsAPI(cb){
+  if(window.google&&window.google.maps&&window.google.maps.places){cb();return;}
+  if(window._gmLoading){var t=setInterval(function(){if(window.google&&window.google.maps&&window.google.maps.places){clearInterval(t);cb();}},200);return;}
+  window._gmLoading=true;window._gmCb=cb;
+  var s=document.createElement('script');
+  s.src='https://maps.googleapis.com/maps/api/js?key='+PLACES_KEY+'&libraries=places&callback=_gmReady';
+  s.async=true;s.defer=true;document.head.appendChild(s);
+}
+window._gmReady=function(){window._gmLoading=false;if(window._gmCb){window._gmCb();window._gmCb=null;}};
+function initGooglePlaces(){
+  if(_gpService)return;
+  var el=document.getElementById('gp-map-hidden');
+  if(!el){el=document.createElement('div');el.id='gp-map-hidden';el.style.cssText='width:1px;height:1px;position:fixed;top:-200px;left:-200px;';document.body.appendChild(el);}
+  _gpMap=new google.maps.Map(el,{center:{lat:56.13,lng:-106.35},zoom:4});
+  _gpService=new google.maps.places.PlacesService(_gpMap);
+}
+var _gpProvMap={
+  'Toronto':'Ontario','Mississauga':'Ontario','Brampton':'Ontario','Hamilton':'Ontario','Ottawa':'Ontario',
+  'Markham':'Ontario','Vaughan':'Ontario','Kitchener':'Ontario','London':'Ontario','Windsor':'Ontario',
+  'Oakville':'Ontario','Burlington':'Ontario','Greater Sudbury':'Ontario','Barrie':'Ontario',
+  'St. Catharines':'Ontario','Guelph':'Ontario','Cambridge':'Ontario','Whitby':'Ontario',
+  'Kingston':'Ontario','Ajax':'Ontario','Oshawa':'Ontario','Richmond Hill':'Ontario','Mississauga':'Ontario',
+  'Vancouver':'British Columbia','Surrey':'British Columbia','Victoria':'British Columbia',
+  'Burnaby':'British Columbia','Abbotsford':'British Columbia','Coquitlam':'British Columbia',
+  'Richmond':'British Columbia','Kelowna':'British Columbia','Langley':'British Columbia','Saanich':'British Columbia',
+  'Montreal':'Quebec','Quebec City':'Quebec','Laval':'Quebec','Gatineau':'Quebec',
+  'Longueuil':'Quebec','Sherbrooke':'Quebec','Saguenay':'Quebec','Terrebonne':'Quebec',
+  'Calgary':'Alberta','Edmonton':'Alberta','Red Deer':'Alberta','Lethbridge':'Alberta',
+  'Winnipeg':'Manitoba','Brandon':'Manitoba',
+  'Halifax':'Nova Scotia','Dartmouth':'Nova Scotia',
+  'Saskatoon':'Saskatchewan','Regina':'Saskatchewan',
+  'St. John\'s':'Newfoundland and Labrador',
+  'Charlottetown':'Prince Edward Island',
+  'Fredericton':'New Brunswick','Moncton':'New Brunswick','Saint John':'New Brunswick',
+  'Whitehorse':'Yukon','Yellowknife':'Northwest Territories','Iqaluit':'Nunavut'
+};
+var _gpProvCodes={'ON':'Ontario','BC':'British Columbia','QC':'Quebec','AB':'Alberta','MB':'Manitoba','SK':'Saskatchewan','NS':'Nova Scotia','NB':'New Brunswick','PE':'Prince Edward Island','NL':'Newfoundland and Labrador','NT':'Northwest Territories','YT':'Yukon','NU':'Nunavut'};
 function aPlaces(){
+  var cities=['Toronto','Mississauga','Brampton','Hamilton','Ottawa','Markham','Vaughan','Kitchener','London','Windsor','Oakville','Burlington','Greater Sudbury','Barrie','St. Catharines','Guelph','Cambridge','Whitby','Kingston','Ajax','Oshawa','Richmond Hill','Vancouver','Surrey','Victoria','Burnaby','Abbotsford','Coquitlam','Richmond','Kelowna','Langley','Saanich','Montreal','Quebec City','Laval','Gatineau','Longueuil','Sherbrooke','Saguenay','Terrebonne','Calgary','Edmonton','Red Deer','Lethbridge','Winnipeg','Brandon','Halifax','Dartmouth','Saskatoon','Regina','St. John\'s','Charlottetown','Fredericton','Moncton','Saint John','Whitehorse','Yellowknife'];
   document.getElementById('a-content').innerHTML=
-    '<div class="tbl-wrap" style="max-width:800px;"><div class="tbl-head"><h3>🌐 Import from Google Places</h3></div><div style="padding:24px;">' +
-    '<p style="color:var(--grey-dark);font-size:13px;margin-bottom:18px;">Search Google Places to find real Canadian businesses to import.</p>' +
-    '<div class="g2"><div class="form-group"><label class="label">Search Query</label><input type="text" id="gp-q" class="inp" placeholder="restaurants, lawyers, plumbers…"></div>' +
-    '<div class="form-group"><label class="label">City</label><select id="gp-c" class="inp inp-sel"><option>Toronto</option><option>Vancouver</option><option>Montreal</option><option>Calgary</option><option>Ottawa</option><option>Edmonton</option><option>Winnipeg</option><option>Halifax</option></select></div></div>' +
-    '<div class="form-group"><label class="label">Assign Industry</label><select id="gp-ind" class="inp inp-sel" style="max-width:300px;">'+INDUSTRIES.map(function(i){return'<option value="'+i.id+'">'+i.icon+' '+i.name+'</option>';}).join('')+'</select></div>' +
-    '<button class="btn btn-dark" onclick="gpSearch()" style="margin-bottom:16px;">🔍 Search</button>' +
-    '<div id="gp-res"></div><div id="gp-imp-btn" class="hidden" style="margin-top:14px;"><button class="btn btn-red" onclick="gpImport()">✅ Import Selected</button></div>' +
-    '</div></div>';
+    '<div class="tbl-wrap" style="max-width:880px;"><div class="tbl-head"><h3>🌐 Import from Google Places API</h3></div><div style="padding:24px;">'+
+    '<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#1E40AF;">'+
+    '<strong>Live data</strong> — Results come directly from the Google Places API. Phone numbers and websites are fetched automatically before import.'+
+    '</div>'+
+    '<div class="g2"><div class="form-group"><label class="label">Search Query</label>'+
+    '<input type="text" id="gp-q" class="inp" placeholder="dentists, electricians, Italian restaurants…" onkeydown="if(event.key===\'Enter\')gpSearch()"></div>'+
+    '<div class="form-group"><label class="label">City</label><select id="gp-c" class="inp inp-sel">'+
+    cities.map(function(c){return'<option>'+c+'</option>';}).join('')+'</select></div></div>'+
+    '<div class="form-group"><label class="label">Assign Industry (applied to all imported results)</label>'+
+    '<select id="gp-ind" class="inp inp-sel" style="max-width:340px;">'+INDUSTRIES.map(function(i){return'<option value="'+i.id+'">'+i.icon+' '+i.name+'</option>';}).join('')+'</select></div>'+
+    '<button class="btn btn-dark" onclick="gpSearch()" style="margin-bottom:16px;">🔍 Search Google Places</button>'+
+    '<div id="gp-res"></div>'+
+    '<div id="gp-imp-btn" class="hidden" style="margin-top:14px;display:flex;align-items:center;gap:12px;">'+
+    '<button class="btn btn-red" id="gp-imp-do" onclick="gpImport()">✅ Import Selected to Directory</button>'+
+    '<span id="gp-sel-count" style="font-size:13px;color:var(--grey-dark);">0 selected</span>'+
+    '</div></div></div>';
 }
 function gpSearch(){
   var q=gv('gp-q'),city=gv2('gp-c');
   if(!q){toast('Enter a search query.','err');return;}
   var res=document.getElementById('gp-res');
-  res.innerHTML='<div class="load-c"><div class="spin"></div></div>';
+  res.innerHTML='<div class="load-c"><div class="spin"></div><p style="margin-top:10px;font-size:13px;color:var(--grey-dark);">Loading Google Places API…</p></div>';
   selectedGP=[];
-  // Generate sample data (real API requires backend proxy for CORS)
-  var provMap={Toronto:'Ontario',Vancouver:'British Columbia',Montreal:'Quebec',Calgary:'Alberta',Ottawa:'Ontario',Edmonton:'Alberta',Winnipeg:'Manitoba',Halifax:'Nova Scotia'};
-  var areaCodes={Toronto:'416',Vancouver:'604',Montreal:'514',Calgary:'403',Ottawa:'613',Edmonton:'780',Winnipeg:'204',Halifax:'902'};
-  var prov=provMap[city]||'Ontario', ac=areaCodes[city]||'416';
-  var places=Array.from({length:12},function(_,i){return {id:'gp_'+Date.now()+i,name:city+' '+q.charAt(0).toUpperCase()+q.slice(1)+' '+(i+1),address:(100+i*11)+' Main St, '+city+', '+prov+', Canada',phone:ac+'-555-'+String(1000+i).padStart(4,'0'),rating:(3.2+Math.random()*1.7).toFixed(1),city:city,province:prov};});
-  res.innerHTML='<div class="tbl-wrap"><div class="tbl-head"><h3>'+places.length+' Results</h3><span style="font-size:12px;color:var(--grey-dark);">Note: Using sample data. Live API requires backend proxy.</span></div>' +
-    '<table><thead><tr><th><input type="checkbox" onchange="gpSelAll(this,'+JSON.stringify(places).replace(/</g,'\\u003c').replace(/>/g,'\\u003e')+')" id="gp-all"></th><th>Name</th><th>Address</th><th>Phone</th><th>Rating</th></tr></thead>' +
-    '<tbody>'+places.map(function(p,i){return'<tr><td><input type="checkbox" onchange="gpToggle('+i+','+JSON.stringify(p).replace(/</g,'\\u003c').replace(/>/g,'\\u003e')+')" id="gpc-'+i+'"></td><td><strong>'+escHtml(p.name)+'</strong></td><td style="font-size:12px;">'+escHtml(p.address)+'</td><td style="font-size:12px;">'+p.phone+'</td><td>⭐ '+p.rating+'</td></tr>';}).join('')+'</tbody></table></div>';
-  document.getElementById('gp-imp-btn').classList.remove('hidden');
-  window._gpPlaces=places;
+  document.getElementById('gp-imp-btn').classList.add('hidden');
+  loadGoogleMapsAPI(function(){
+    initGooglePlaces();
+    res.innerHTML='<div class="load-c"><div class="spin"></div><p style="margin-top:10px;font-size:13px;color:var(--grey-dark);">Searching…</p></div>';
+    _gpService.textSearch({query:q+' in '+city+', Canada',type:'establishment'},function(results,status){
+      if(status==='ZERO_RESULTS'||!results||!results.length){
+        res.innerHTML='<div style="padding:24px;text-align:center;color:var(--grey-dark);">No results found for "<strong>'+escHtml(q)+'</strong>" in '+escHtml(city)+'. Try a broader search term.</div>';
+        return;
+      }
+      if(status!=='OK'){
+        res.innerHTML='<div style="padding:20px;color:var(--danger);">Google Places API error: <strong>'+escHtml(status)+'</strong>.<br><small>Ensure the Places API is enabled in your Google Cloud Console and the key has no referrer restrictions blocking this domain.</small></div>';
+        return;
+      }
+      var places=results.map(function(p){
+        var addr=p.formatted_address||'';
+        var parsedProv=_gpProvMap[city]||'Ontario';
+        var m=addr.match(/\b(ON|BC|QC|AB|MB|SK|NS|NB|PE|NL|NT|YT|NU)\b/);
+        if(m)parsedProv=_gpProvCodes[m[1]]||parsedProv;
+        return {id:p.place_id,placeId:p.place_id,name:p.name,address:addr,phone:'',rating:p.rating||0,types:p.types||[],city:city,province:parsedProv};
+      });
+      window._gpPlaces=places;
+      res.innerHTML=
+        '<div class="tbl-wrap"><div class="tbl-head">'+
+        '<h3>'+places.length+' Results &nbsp;<span style="font-size:12px;font-weight:400;color:var(--grey-dark);">Live from Google Places API</span></h3>'+
+        '</div><div style="overflow-x:auto;"><table>'+
+        '<thead><tr><th><input type="checkbox" onchange="gpSelAll(this)" id="gp-all"></th>'+
+        '<th>Business Name</th><th>Address</th><th>Rating</th><th>Category</th></tr></thead>'+
+        '<tbody>'+
+        places.map(function(p,i){
+          var cats=(p.types||[]).filter(function(t){return t!=='establishment'&&t!=='point_of_interest';}).slice(0,2).join(', ').replace(/_/g,' ');
+          return '<tr>'+
+            '<td><input type="checkbox" onchange="gpToggle('+i+')" id="gpc-'+i+'"></td>'+
+            '<td><strong>'+escHtml(p.name)+'</strong></td>'+
+            '<td style="font-size:12px;">'+escHtml(p.address)+'</td>'+
+            '<td>'+(p.rating?'⭐ '+p.rating.toFixed(1):'—')+'</td>'+
+            '<td style="font-size:11px;color:var(--grey-dark);">'+escHtml(cats)+'</td></tr>';
+        }).join('')+
+        '</tbody></table></div></div>';
+      document.getElementById('gp-imp-btn').classList.remove('hidden');
+    });
+  });
 }
-function gpSelAll(cb,places){selectedGP=cb.checked?places.slice():[]; places.forEach(function(_,i){var el=document.getElementById('gpc-'+i);if(el)el.checked=cb.checked;});}
-function gpToggle(i,p){var idx=selectedGP.findIndex(function(x){return x.id===p.id;});if(idx>-1)selectedGP.splice(idx,1);else selectedGP.push(p);}
+function gpSelAll(cb){
+  var places=window._gpPlaces||[];
+  selectedGP=cb.checked?places.slice():[];
+  places.forEach(function(_,i){var el=document.getElementById('gpc-'+i);if(el)el.checked=cb.checked;});
+  var sc=document.getElementById('gp-sel-count');if(sc)sc.textContent=selectedGP.length+' selected';
+}
+function gpToggle(i){
+  var p=(window._gpPlaces||[])[i];if(!p)return;
+  var idx=selectedGP.findIndex(function(x){return x.id===p.id;});
+  if(idx>-1)selectedGP.splice(idx,1);else selectedGP.push(p);
+  var sc=document.getElementById('gp-sel-count');if(sc)sc.textContent=selectedGP.length+' selected';
+}
 function gpImport(){
-  if(!selectedGP.length){toast('Select at least one.','err');return;}
+  if(!selectedGP.length){toast('Select at least one business.','err');return;}
   var ind=gv2('gp-ind')||'restaurants';
-  var b=db.batch();
-  selectedGP.forEach(function(p){var ref=db.collection('businesses').doc();b.set(ref,{name:p.name,industry:ind,province:p.province,city:p.city,address:p.address,phone:p.phone,email:'',website:'',description:p.name+' — imported via Google Places.',approved:true,avgRating:parseFloat(p.rating)||0,reviewCount:0,createdAt:firebase.firestore.FieldValue.serverTimestamp()});});
-  b.commit().then(function(){toast(selectedGP.length+' businesses imported! 🍁','ok');selectedGP=[];aTab('listings');}).catch(function(e){toast(e.message,'err');});
+  var btn=document.getElementById('gp-imp-do');
+  if(btn){btn.disabled=true;btn.textContent='Fetching details…';}
+  var total=selectedGP.length,done=0,toImport=[];
+  function doCommit(){
+    var b=db.batch();
+    toImport.forEach(function(p){
+      var ref=db.collection('businesses').doc();
+      b.set(ref,{name:p.name,industry:ind,province:p.province,city:p.city,address:p.address,phone:p.phone||'',email:'',website:p.website||'',description:p.name+' — imported from Google Places API.',approved:true,avgRating:parseFloat(p.rating)||0,reviewCount:0,placeId:p.placeId||'',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    });
+    b.commit()
+      .then(function(){toast(toImport.length+' businesses imported to directory!','ok');selectedGP=[];aTab('listings');})
+      .catch(function(e){if(btn){btn.disabled=false;btn.textContent='✅ Import Selected to Directory';}toast(e.message,'err');});
+  }
+  if(!_gpService){toImport=selectedGP.map(function(p){return Object.assign({},p);});doCommit();return;}
+  selectedGP.forEach(function(p){
+    _gpService.getDetails({placeId:p.placeId||p.id,fields:['formatted_phone_number','website']},function(result,status){
+      var copy=Object.assign({},p);
+      copy.phone=(result&&result.formatted_phone_number)||'';
+      copy.website=(result&&result.website)||'';
+      toImport.push(copy);done++;
+      if(btn)btn.textContent='Fetching details… ('+done+'/'+total+')';
+      if(done===total)doCommit();
+    });
+  });
 }
 
 var _aUsersData=[];
